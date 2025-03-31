@@ -60,7 +60,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.fileMDMOpen: bool = False
         self.readForceMDMToggle: bool = False
         self.switchDirectionMDMToggle: bool = False
-        self.manualDisplacementModeActive: bool = False
+        self.MDMActive: bool = False
         self.singleReadToggle: bool = False
         self.singleReadForce: float = float()
         self.singleReadForces: int = 10
@@ -69,7 +69,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.txtLogMDM: str = str()
         self.reMDMMatch = re.compile(r"\[[A-Za-z0-9]+\]")
         self.data = [[], []]
-        self.data2 = [[], []]
 
         self.plot(clrBg="default")
         self.plotMDM()
@@ -498,7 +497,7 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         del self.data
         self.data = [[], []]
-        if self.manualDisplacementModeActive:
+        if self.MDMActive:
             self.graphMDM1.clear()
             self.graphMDM2.clear()
         else:
@@ -540,7 +539,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setText("ReGauge")
         self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
-        if not self.manualDisplacementModeActive:
+        if not self.MDMActive:
             self.ui.butRecord.setEnabled(True)
         self.ui.butReGauge.setChecked(False)
         self.ui.butSingleRead.setEnabled(True)
@@ -581,7 +580,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.thread_pool.start(self.singleReadWorker.run)
 
     def singleReadEnd(self):
-        if self.manualDisplacementModeActive:
+        if self.MDMActive:
             self.ui.butSingleRead.setEnabled(True)
             if self.fileMDMOpen:
                 self.ui.butReadForceMDM.setEnabled(True)
@@ -604,23 +603,6 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
                     self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
                     self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
-
-                elif self.switchDirectionMDMToggle:
-                    self.data[1].append(self.singleReadForce)
-                    self.readForceMDMToggle = True
-                    del self.txtLogMDM
-                    self.txtLogMDM = str()
-                    if re.search(self.reMDMMatch, self.ui.xLabel_2.text()) and  re.search(self.reMDMMatch, self.ui.yLabel_2.text()):
-                        xUnit = self.ui.xLabel_2.text().split("[")[1].split("]")
-                        yUnit = self.ui.yLabel_2.text().split("[")[1].split("]")
-                        if len(xUnit) > 0 and len(yUnit) > 0:
-                            self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]} {xUnit[0]}, {self.data[1][-1]} {yUnit[0]}"
-                    else:
-                        self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]}, {self.data[1][-1]}"
-                    self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
-                    self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
-                    self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
-                    self.ui.butDeletePreviousMDM.setEnabled(True)
                 else:
                     self.data[0].append(0.)
                     self.data[1].append(self.singleReadForce)
@@ -635,11 +617,11 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
                     self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
                     self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
-                    self.ui.butDeletePreviousMDM.setEnabled(True)
                 self.ui.butSwitchDirectionMDM.setEnabled(True)
 
                 self.measurementLog.writeLog([self.data[0][-1],self.data[1][-1]])
                 self.updatePlotMDM()
+                self.ui.butDeletePreviousMDM.setEnabled(True)
         else:
             self.ui.butSingleRead.setText(
                 "{:.5f}".format(self.singleReadForce))
@@ -665,6 +647,8 @@ class UserInterface(QtWidgets.QMainWindow):
     def singleReadStepUpdate(self):
         try:
             self.stepSizeMDM = float(self.ui.setStepSizeMDM.text())
+            if self.switchDirectionMDMToggle:
+                self.stepSizeMDM = -1*self.stepSizeMDM
         except ValueError:
             pass
 
@@ -677,6 +661,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.measurementLog.closeFile()
         del self.measurementLog
         self.readForceMDMToggle = False
+        self.ui.butDeletePreviousMDM.setEnabled(False)
         if self.switchDirectionMDMToggle:
             self.measurementLog = None
             self.switchDirectionMDMToggle = False
@@ -697,6 +682,7 @@ class UserInterface(QtWidgets.QMainWindow):
         else:
             self.switchDirectionMDMToggle = True
             self.ui.butSwitchDirectionMDM.setText("Stop")
+            self.ui.butDeletePreviousMDM.setEnabled(False)
 
             self.measurementLog = Logging(
                 "".join(self.filePath.split(".")[:-1])+"_out.csv")
@@ -704,18 +690,33 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.stepSizeMDM = -1*self.stepSizeMDM
             if len(self.data[0]) > 0:
+                self.switchForce = self.data[1][-1]
                 self.switchDistance = self.data[0][-1]
+                del self.data
             else:
                 self.switchDistance = 0.
+                self.switchForce = 0.
 
-            self.data2 = self.data
-            del self.data
-            self.data = [[self.switchDistance], []]
+            self.data = [[self.switchDistance], [self.switchForce]]
+
+            self.readForceMDMToggle = True
+            del self.txtLogMDM
+            self.txtLogMDM = str()
+            if re.search(self.reMDMMatch, self.ui.xLabel_2.text()) and  re.search(self.reMDMMatch, self.ui.yLabel_2.text()):
+                xUnit = self.ui.xLabel_2.text().split("[")[1].split("]")
+                yUnit = self.ui.yLabel_2.text().split("[")[1].split("]")
+                if len(xUnit) > 0 and len(yUnit) > 0:
+                    self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]} {xUnit[0]}, {self.data[1][-1]} {yUnit[0]}"
+            else:
+                self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]}, {self.data[1][-1]}"
+            self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
+            self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
+            self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
 
     def butSwitchMDM(self):
         self.butClear()
-        if self.manualDisplacementModeActive:
-            self.manualDisplacementModeActive = False
+        if self.MDMActive:
+            self.MDMActive = False
             # visibility
             self.ui.centerGraph.setVisible(True)
             self.ui.MDM.setVisible(False)
@@ -731,7 +732,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.MDM.setEnabled(False)
 
         else:
-            self.manualDisplacementModeActive = True
+            self.MDMActive = True
 
             # visibility
             self.ui.centerGraph.setVisible(False)
@@ -814,6 +815,8 @@ class UserInterface(QtWidgets.QMainWindow):
         if self.fileMDMOpen:
             if not self.switchDirectionMDMToggle:
                 self.switchDirectionMDM()
+            else:
+                self.ui.butDeletePreviousMDM.setEnabled(False)
             self.switchDirectionMDMToggle = False
             del self.txtLogMDM
             self.txtLogMDM = str()
@@ -856,8 +859,13 @@ class UserInterface(QtWidgets.QMainWindow):
         # data changes
         self.data[0], self.data[1] = self.data[0][:-1], self.data[1][:-1]
 
-        if len(self.data[0]) <= 0:
+        if len(self.data[0]) <= 1 and self.switchDirectionMDMToggle:
+            self.ui.butDeletePreviousMDM.setEnabled(False)
+            self.ui.butSwitchDirectionMDM.setEnabled(False)
+        elif len(self.data[0]) <= 0:
             self.readForceMDMToggle = False
+            self.ui.butDeletePreviousMDM.setEnabled(False)
+            self.ui.butSwitchDirectionMDM.setEnabled(False)
         self.measurementLog.replaceFile(data=self.data)
 
         # text box changes
