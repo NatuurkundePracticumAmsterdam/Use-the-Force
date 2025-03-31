@@ -55,7 +55,7 @@ class Logging():
         self.HAND = open(self.full_filename, "w+t")
         self.NeverCloseFile = True
         self.writeLogFull(data=data)
-        self.NeverCloseFile = True
+        self.NeverCloseFile = False
         self.HAND.close()
 
 
