@@ -530,7 +530,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setText("ReGauge")
         self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
-        self.ui.butRecord.setEnabled(True)
+        if not self.manualDisplacementModeActive:
+            self.ui.butRecord.setEnabled(True)
         self.ui.butReGauge.setChecked(False)
 
     def butSave(self) -> None:
