@@ -515,6 +515,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setEnabled(False)
         self.ui.butConnect.setEnabled(False)
         self.ui.butRecord.setEnabled(False)
+        self.ui.butSingleRead.setEnabled(False)
         th = threading.Thread(target=self.butReGaugeActive)
         th.start()
 
@@ -537,6 +538,7 @@ class UserInterface(QtWidgets.QMainWindow):
         if not self.manualDisplacementModeActive:
             self.ui.butRecord.setEnabled(True)
         self.ui.butReGauge.setChecked(False)
+        self.ui.butSingleRead.setEnabled(True)
 
     def butSave(self) -> None:
         """
@@ -570,6 +572,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butSingleRead.setEnabled(False)
         self.ui.butRecord.setEnabled(False)
         self.ui.butConnect.setEnabled(False)
+        self.ui.butReGauge.setEnabled(False)
         self.thread_pool.start(self.singleReadWorker.run)
 
     def singleReadEnd(self):
@@ -637,6 +640,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butRecord.setEnabled(True)
             self.singleReadToggle = False
 
+        self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
 
     def singleReadSkipsUpdate(self):
@@ -1044,7 +1048,7 @@ Decoded:
             try:
                 line: str = self.ser.readline().decode(self.encoding)
                 self.ser.reset_input_buffer()
-                ID, force = line.split(",")
+                ID, force = line.strip().split(",")
                 break
             except ValueError:
                 pass
