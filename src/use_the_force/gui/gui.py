@@ -497,7 +497,11 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         del self.data
         self.data = [[], []]
-        self.ui.graph1.clear()
+        if self.manualDisplacementModeActive:
+            self.graphMDM1.clear()
+            self.graphMDM2.clear()
+        else:
+            self.ui.graph1.clear()
         if hasattr(self, "sensor"):
             self.sensor.ser.reset_input_buffer()
         self.ui.butSave.setEnabled(False)
@@ -515,6 +519,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setEnabled(False)
         self.ui.butConnect.setEnabled(False)
         self.ui.butRecord.setEnabled(False)
+        self.ui.butSingleRead.setEnabled(False)
         th = threading.Thread(target=self.butReGaugeActive)
         th.start()
 
@@ -537,6 +542,7 @@ class UserInterface(QtWidgets.QMainWindow):
         if not self.manualDisplacementModeActive:
             self.ui.butRecord.setEnabled(True)
         self.ui.butReGauge.setChecked(False)
+        self.ui.butSingleRead.setEnabled(True)
 
     def butSave(self) -> None:
         """
@@ -570,6 +576,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butSingleRead.setEnabled(False)
         self.ui.butRecord.setEnabled(False)
         self.ui.butConnect.setEnabled(False)
+        self.ui.butReGauge.setEnabled(False)
         self.thread_pool.start(self.singleReadWorker.run)
 
     def singleReadEnd(self):
@@ -637,6 +644,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butRecord.setEnabled(True)
             self.singleReadToggle = False
 
+        self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
 
     def singleReadSkipsUpdate(self):
@@ -663,20 +671,30 @@ class UserInterface(QtWidgets.QMainWindow):
         self.thread_pool.start(self.singleReadWorker.run)
 
     def switchDirectionMDM(self):
+        self.measurementLog.closeFile()
+        del self.measurementLog
         self.readForceMDMToggle = False
         if self.switchDirectionMDMToggle:
+            self.measurementLog = None
             self.switchDirectionMDMToggle = False
-            self.butFileMDM()
             del self.txtLogMDM
             self.txtLogMDM = str()
             self.ui.plainTextEdit.clear()
             self.ui.butSwitchDirectionMDM.setText("Switch Direction")
+
+            self.fileMDMOpen = False
+            self.ui.butFileMDM.setChecked(False)
+            self.ui.butFileMDM.setText("-")
+            self.butClear()
+            self.ui.butSwitchManual.setEnabled(True)
+            self.ui.butConnect.setEnabled(True)
+            self.ui.butReadForceMDM.setEnabled(False)
+            self.ui.butSwitchDirectionMDM.setEnabled(False)
+            
         else:
             self.switchDirectionMDMToggle = True
             self.ui.butSwitchDirectionMDM.setText("Stop")
 
-            self.measurementLog.closeFile()
-            del self.measurementLog
             self.measurementLog = Logging(
                 "".join(self.filePath.split(".")[:-1])+"_out.csv")
             self.measurementLog.createLogGUI()
@@ -800,8 +818,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSwitchDirectionMDM.setText("Switch Direction")
 
             self.fileMDMOpen = False
-            self.ui.butFileMDM.setChecked(True)
-            self.measurementLog.closeFile()
+            self.ui.butFileMDM.setChecked(False)
             self.measurementLog = None
             self.ui.butFileMDM.setText("-")
             self.butClear()
@@ -1040,11 +1057,14 @@ Decoded:
         # 'readline()' gives a value from the serial connection in 'bytes'
         # 'decode()'   turns 'bytes' into a 'string'
         # 'float()'    turns 'string' into a floating point number.
-        line: str = self.ser.readline().decode(self.encoding)
-        self.ser.reset_input_buffer()
-        ID, force = line.split(",")
-
-        return [float(perf_counter_ns()-self.T0), float(force)]
+        while True:
+            try:
+                line: str = self.ser.readline().decode(self.encoding)
+                self.ser.reset_input_buffer()
+                ID, force = line.strip().split(",")
+                return [float(perf_counter_ns()-self.T0), float(force)]
+            except ValueError:
+                pass
 
     def ForceFix(self, x: float) -> float:
         """
