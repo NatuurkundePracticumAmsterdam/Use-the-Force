@@ -161,12 +161,13 @@ class UserInterface(QtWidgets.QMainWindow):
         )
 
         self.ui.yLabel.textChanged.connect(self.updatePlotYLabel)
-        # self.ui.yLabelSideSlider.valueChanged.connect(self.updatePlotYLabel)
-
         self.ui.xLabel.textChanged.connect(self.updatePlotXLabel)
-        # self.ui.xLabelSideSlider.valueChanged.connect(self.updatePlotXLabel)
+
         self.ui.xLimSlider.sliderMoved.connect(self.xLimSlider)
         self.ui.xLimSet.textChanged.connect(self.xLimSet)
+
+        self.ui.graph1.setTitle(self.ui.title.text(), color=(255,255,255))
+        self.ui.title.textChanged.connect(self.updatePlotTitle)
 
     def updatePlot(self) -> None:
         """
@@ -234,6 +235,9 @@ class UserInterface(QtWidgets.QMainWindow):
             pass
 
         del tmp
+
+    def updatePlotTitle(self) -> None:
+        self.ui.graph1.setTitle(self.ui.title.text(), color=(255,255,255))
 
     def startPlotTimer(self):
         """
