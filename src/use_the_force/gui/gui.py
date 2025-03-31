@@ -497,7 +497,11 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         del self.data
         self.data = [[], []]
-        self.ui.graph1.clear()
+        if self.manualDisplacementModeActive:
+            self.graphMDM1.clear()
+            self.graphMDM2.clear()
+        else:
+            self.ui.graph1.clear()
         if hasattr(self, "sensor"):
             self.sensor.ser.reset_input_buffer()
         self.ui.butSave.setEnabled(False)
@@ -667,20 +671,30 @@ class UserInterface(QtWidgets.QMainWindow):
         self.thread_pool.start(self.singleReadWorker.run)
 
     def switchDirectionMDM(self):
+        self.measurementLog.closeFile()
+        del self.measurementLog
         self.readForceMDMToggle = False
         if self.switchDirectionMDMToggle:
+            self.measurementLog = None
             self.switchDirectionMDMToggle = False
-            self.butFileMDM()
             del self.txtLogMDM
             self.txtLogMDM = str()
             self.ui.plainTextEdit.clear()
             self.ui.butSwitchDirectionMDM.setText("Switch Direction")
+
+            self.fileMDMOpen = False
+            self.ui.butFileMDM.setChecked(False)
+            self.ui.butFileMDM.setText("-")
+            self.butClear()
+            self.ui.butSwitchManual.setEnabled(True)
+            self.ui.butConnect.setEnabled(True)
+            self.ui.butReadForceMDM.setEnabled(False)
+            self.ui.butSwitchDirectionMDM.setEnabled(False)
+            
         else:
             self.switchDirectionMDMToggle = True
             self.ui.butSwitchDirectionMDM.setText("Stop")
 
-            self.measurementLog.closeFile()
-            del self.measurementLog
             self.measurementLog = Logging(
                 "".join(self.filePath.split(".")[:-1])+"_out.csv")
             self.measurementLog.createLogGUI()
@@ -804,8 +818,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSwitchDirectionMDM.setText("Switch Direction")
 
             self.fileMDMOpen = False
-            self.ui.butFileMDM.setChecked(True)
-            self.measurementLog.closeFile()
+            self.ui.butFileMDM.setChecked(False)
             self.measurementLog = None
             self.ui.butFileMDM.setText("-")
             self.butClear()
