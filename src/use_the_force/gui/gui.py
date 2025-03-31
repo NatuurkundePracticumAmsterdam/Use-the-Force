@@ -858,9 +858,10 @@ class UserInterface(QtWidgets.QMainWindow):
 
         if len(self.data[0]) <= 0:
             self.readForceMDMToggle = False
+        self.measurementLog.replaceFile(data=self.data)
 
         # text box changes
-        self.txtLogMDM = str().join(self.txtLogMDM.split("\n")[:-1])
+        self.txtLogMDM = str("\n").join(self.txtLogMDM.split("\n")[:-1])
         self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
         self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
         self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
