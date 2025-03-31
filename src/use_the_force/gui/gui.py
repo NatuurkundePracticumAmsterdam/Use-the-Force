@@ -292,18 +292,22 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setText("Connecting...")
         try:
             self.sensor = ForceSensorGUI(ui=self.ui)
+            # needs time or it will break
+            # something to do with the M5Stick probably
             sleep(0.5)
             self.ui.butReGauge.setEnabled(True)
-            self.ui.butRecord.setEnabled(True)
             self.ui.butConnect.setText("Connected")
-            if not self.fileOpen:
-                self.butClear()
-            self.ui.butFile.setEnabled(True)
             self.ui.butSingleRead.setEnabled(True)
             self.ui.butConnect.setChecked(True)
             self.ui.setPortName.setEnabled(False)
-            if self.fileMDMOpen:
-                self.ui.butReadForceMDM.setEnabled(True)
+            if not self.MDMActive:
+                self.ui.butRecord.setEnabled(True)
+                if not self.fileOpen:
+                    self.butClear()
+                self.ui.butFile.setEnabled(True)
+            else:
+                if self.fileMDMOpen:
+                    self.ui.butReadForceMDM.setEnabled(True)
 
         except Exception as e:
             self.error(e.__class__.__name__, e.args[0])
