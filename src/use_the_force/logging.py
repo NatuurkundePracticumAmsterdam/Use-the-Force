@@ -42,7 +42,6 @@ class Logging():
         """
 
         # Check for a file that does not exist yet.
-        i = 0
         self.full_filename = self.filename
 
         # Create this file.
@@ -50,6 +49,14 @@ class Logging():
         self.HAND.close()
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
+
+
+    def replaceFile(self, data):
+        self.HAND = open(self.full_filename, "w+t")
+        self.NeverCloseFile = True
+        self.writeLogFull(data=data)
+        self.NeverCloseFile = False
+        self.HAND.close()
 
 
     ### ===LOGGING FUNCTION===###

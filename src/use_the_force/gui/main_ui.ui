@@ -1109,7 +1109,7 @@ Displacement Mode</string>
        <x>359</x>
        <y>319</y>
        <width>238</width>
-       <height>80</height>
+       <height>56</height>
       </rect>
      </property>
      <property name="verticalScrollBarPolicy">
@@ -1122,12 +1122,29 @@ Displacement Mode</string>
       <bool>true</bool>
      </property>
     </widget>
+    <widget class="QPushButton" name="butDeletePreviousMDM">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>359</x>
+       <y>375</y>
+       <width>238</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Delete Previous Reading</string>
+     </property>
+    </widget>
     <zorder>graphMDM</zorder>
     <zorder>labMDM</zorder>
     <zorder>butReadForceMDM</zorder>
     <zorder>extraSettingsBoxMDM</zorder>
     <zorder>butSwitchDirectionMDM</zorder>
     <zorder>plainTextEdit</zorder>
+    <zorder>butDeletePreviousMDM</zorder>
    </widget>
    <zorder>settings</zorder>
    <zorder>rightWidget</zorder>
