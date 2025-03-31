@@ -703,6 +703,8 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.data = [[self.switchDistance], [self.switchForce]]
 
+            self.measurementLog.writeLog([self.data[0][-1],self.data[1][-1]])
+
             self.readForceMDMToggle = True
             del self.txtLogMDM
             self.txtLogMDM = str()
@@ -826,6 +828,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.txtLogMDM = str()
             self.ui.plainTextEdit.clear()
             self.ui.butSwitchDirectionMDM.setText("Switch Direction")
+            self.readForceMDMToggle = False
 
             self.fileMDMOpen = False
             self.ui.butFileMDM.setChecked(False)
