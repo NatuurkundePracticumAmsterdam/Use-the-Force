@@ -1040,9 +1040,14 @@ Decoded:
         # 'readline()' gives a value from the serial connection in 'bytes'
         # 'decode()'   turns 'bytes' into a 'string'
         # 'float()'    turns 'string' into a floating point number.
-        line: str = self.ser.readline().decode(self.encoding)
-        self.ser.reset_input_buffer()
-        ID, force = line.split(",")
+        while True:
+            try:
+                line: str = self.ser.readline().decode(self.encoding)
+                self.ser.reset_input_buffer()
+                ID, force = line.split(",")
+                break
+            except ValueError:
+                pass
 
         return [float(perf_counter_ns()-self.T0), float(force)]
 
