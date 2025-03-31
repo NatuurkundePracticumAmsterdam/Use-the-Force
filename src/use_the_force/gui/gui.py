@@ -1049,11 +1049,9 @@ Decoded:
                 line: str = self.ser.readline().decode(self.encoding)
                 self.ser.reset_input_buffer()
                 ID, force = line.strip().split(",")
-                break
+                return [float(perf_counter_ns()-self.T0), float(force)]
             except ValueError:
                 pass
-
-        return [float(perf_counter_ns()-self.T0), float(force)]
 
     def ForceFix(self, x: float) -> float:
         """
