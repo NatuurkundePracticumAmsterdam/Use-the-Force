@@ -575,7 +575,8 @@ class UserInterface(QtWidgets.QMainWindow):
     def singleReadEnd(self):
         if self.manualDisplacementModeActive:
             self.ui.butSingleRead.setEnabled(True)
-            self.ui.butReadForceMDM.setEnabled(True)
+            if self.fileMDMOpen:
+                self.ui.butReadForceMDM.setEnabled(True)
             if self.singleReadToggle:
                 self.ui.butSingleRead.setText(
                     "{:.5f}".format(self.singleReadForce))
