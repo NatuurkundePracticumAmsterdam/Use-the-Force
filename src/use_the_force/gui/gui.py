@@ -49,6 +49,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReadForceMDM.pressed.connect(self.readForceMDM)
         self.ui.butSwitchDirectionMDM.pressed.connect(self.switchDirectionMDM)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
+        self.ui.butDeletePreviousMDM.pressed.connect(self.butDeletePreviousMDM)
 
         self.measurementLog = None
         self.butConnectToggle: bool = False
@@ -619,6 +620,7 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
                     self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
                     self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
+                    self.ui.butDeletePreviousMDM.setEnabled(True)
                 else:
                     self.data[0].append(0.)
                     self.data[1].append(self.singleReadForce)
@@ -633,6 +635,7 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
                     self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
                     self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
+                    self.ui.butDeletePreviousMDM.setEnabled(True)
                 self.ui.butSwitchDirectionMDM.setEnabled(True)
 
                 self.measurementLog.writeLog([self.data[0][-1],self.data[1][-1]])
@@ -843,6 +846,26 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.butReadForceMDM.setEnabled(True)
             else:
                 self.ui.butFileMDM.setText("-")
+
+    def butDeletePreviousMDM(self) -> None:
+        """
+        Deletes the previous value in self.data
+
+        main use for when MDM hits other side in capillary bridge experiment, or when the capillary bridge gets broken without being noticed
+        """
+        # data changes
+        self.data[0], self.data[1] = self.data[0][:-1], self.data[1][:-1]
+
+        if len(self.data[0]) <= 0:
+            self.readForceMDMToggle = False
+
+        # text box changes
+        self.txtLogMDM = str().join(self.txtLogMDM.split("\n")[:-1])
+        self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
+        self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
+        self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
+
+        self.updatePlotMDM()
 
     def xLimSlider(self) -> None:
         """
