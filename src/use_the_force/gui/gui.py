@@ -703,6 +703,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.logOptions.setEnabled(True)
             self.ui.graphOptions.setEnabled(True)
             self.ui.butClear.setEnabled(True)
+            if self.butConnectToggle:
+                self.ui.butRecord.setEnabled(True)
 
             # MDM
             self.ui.MDM.setEnabled(False)
@@ -719,6 +721,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.graphOptions.setEnabled(False)
             self.ui.butSave.setEnabled(False)
             self.ui.butClear.setEnabled(False)
+            self.ui.butRecord.setEnabled(False)
 
             # MDM
             self.ui.MDM.setEnabled(True)
