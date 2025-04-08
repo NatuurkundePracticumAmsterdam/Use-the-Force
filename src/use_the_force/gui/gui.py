@@ -936,9 +936,9 @@ class mainLogWorker(QObject, QRunnable):
 
         # a time of `-1` will be seen as infinit and function will keep reading
         if float(self.callerSelf.ui.setTime.text()) >= 0. and self.callerSelf.ui.setTime.text() != "-1":
-            measurementTime = float(self.callerSelf.ui.setTime.text())*1e9
+            measurementTime = float(self.callerSelf.ui.setTime.text())
         else:
-            measurementTime = -1*1e9
+            measurementTime = -1
             self.callerSelf.ui.setTime.setText("-1")
 
         self.startSignal.emit()
@@ -949,19 +949,17 @@ class mainLogWorker(QObject, QRunnable):
         else:
             time: float = self.callerSelf.data[0][-1]
             self.callerSelf.sensor.T0 = perf_counter_ns() - int(time*1e9+0.5)
-
-        while (time < measurementTime or measurementTime == -1*1e9) and self.callerSelf.recording:
-            # time in nanoseconds, force reading from sensor
+        while (time < measurementTime or measurementTime == -1) and self.callerSelf.recording:
             try:
-                time, measuredForce = self.callerSelf.sensor.GetReading()
-                Force = self.callerSelf.sensor.ForceFix(measuredForce)
-                timeS = time/1e9
-                self.callerSelf.data[0].append(timeS)
+                Force = self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
+                time = perf_counter_ns() - self.callerSelf.sensor.T0
+                time = round(time/1e9, 8)
+                self.callerSelf.data[0].append(time)
                 self.callerSelf.data[1].append(Force)
 
                 if not self.logLess:
-                    # logs: t(s), F(mN)
-                    self.callerSelf.measurementLog.writeLog([timeS, Force])
+                    # logs: t[s], F[mN]
+                    self.callerSelf.measurementLog.writeLog([time, Force])
 
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
@@ -1003,10 +1001,9 @@ class singleReadWorker(QObject, QRunnable):
 
     def run(self):
         self.startSignal.emit()
-        _skip = [self.callerSelf.sensor.GetReading()[1]
+        _skip = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
                  for i in range(0, self.callerSelf.singleReadSkips)]
-        forces = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.GetReading()[
-                                                  1]) for i in range(0, self.callerSelf.singleReadForces)]
+        forces = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR()) for i in range(0, self.callerSelf.singleReadForces)]
         self.callerSelf.singleReadForce = round(sum(
             forces)/self.callerSelf.singleReadForces,8)
         self.endSignal.emit()
@@ -1031,13 +1028,14 @@ class ForceSensorGUI():
 
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
 
-        self.baudrate: int = kwargs.pop('baudrate', 57600)
-        self.timeout: float = kwargs.pop('timeout', 2.)
+        self.baudrate: int = kwargs.pop('baudrate', 115200)
+        self.timeout: float = kwargs.pop('timeout', 5.)
 
-        # M5Din Meter only gives back values with 6 decimals max
-        self.gaugeRound: int = 6
-        self.gaugeLines: int = 10
-        self.gaugeSkipLines: int = 10
+        self.gaugeRound: int = kwargs.pop("gaugeLines",6)
+        self.gaugeLines: int = kwargs.pop("gaugeLines",10)
+        self.gaugeSkipLines: int = kwargs.pop("gaugeSkipLines", 3)
+        self.cmdStart: str = kwargs.pop("cmdStart", "#")
+        self.cmdEnd: str = kwargs.pop("cmdEnd", ";")
 
         self.T0 = perf_counter_ns()
 
@@ -1051,43 +1049,24 @@ class ForceSensorGUI():
                                  baudrate=self.baudrate,
                                  timeout=self.timeout
                                  )
-
-        # Test whether we are receiving any data or not.
-        try:
-            line = self.ser.readline()
-            decodedLine = line.decode(self.encoding)
-            if decodedLine == "":
-                raise RuntimeError("Loadsensor returns no data")
-
-            if self.GaugeValue == 0:
-                self.reGauge()
-
-        except UnicodeDecodeError as e:
-            print("""
-could not decode incoming data!
-Connection maintained for debugging.
-Data: 
-""",
-                  line,
-                  """
-Decoded: 
-""" + str(line.decode(self.encoding, errors="replace"))
-            )
+        if self.GaugeValue == 0.:
+            self.reGauge()
 
     def reGauge(self):
         """
         # !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
         """
-        self.ser.reset_input_buffer()
-        skips: list[float] = [self.GetReading()[1]
+        skips: list[float] = [self.SR()
                               for i in range(self.gaugeSkipLines)]
-        reads: list[float] = [self.GetReading()[1]
+        del skips
+        reads: list[float] = [self.SR()
                               for i in range(self.gaugeLines)]
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
         self.ui.setGaugeValue.setText(f"{self.GaugeValue}")
 
     def GetReading(self) -> list[int, float, float]:
         """
+        # DEPRICATED: use `SR()` instead.
         Reads a line of the M5Din Meter
 
         :returns: singular read line as [ID, Time, Force]
@@ -1128,7 +1107,7 @@ Decoded:
                 print("ABORT TO AVOID SENSOR DAMAGE")
 
         # The output, with gauge, in mN
-        return (x - self.GaugeValue) * self.NewtonPerCount * 1000
+        return (x - self.GaugeValue) * self.NewtonPerCount
 
     def ClosePort(self) -> None:
         """
@@ -1139,22 +1118,26 @@ Decoded:
         self.ser.flushOutput()
         self.ser.close()
 
-    def TestSensor(self, lines: int = 100) -> None:
+    def SR(self) -> float:
         """
-        Opens the port and prints some values on screen.
-        Primarily a debugging tool.
+        ### Single Read
+        Reads the force a single time.
 
-        Tests if the decoding is right and should show the decoded values after the "-->"
-
-        :param lines: how many lines to read, default: `100`
-        :type lines: int
+        :return: read force
+        :rtype: float
         """
-        for i in range(lines):
-            line = self.ser.readline()
-            decodedLine = line.decode(self.encoding, errors="replace")
-            print(line, " --> ", decodedLine)
-            print("Force: " + str(float(decodedLine.split(",")[1])) + " N")
-
+        self.ser.reset_input_buffer()
+        self.ser.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
+        returnLine = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        else:
+            try:
+                return float(returnLine.split(": ")[-1])
+            except ValueError as e:
+                return e
 
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self, errorType: str, errorText: str) -> None:
