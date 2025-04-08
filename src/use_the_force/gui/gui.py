@@ -51,6 +51,13 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
         self.ui.butDeletePreviousMDM.pressed.connect(self.butDeletePreviousMDM)
 
+        ports = [port.device for port in list_ports.comports()]
+        if len(ports) > 0:
+            self.ui.setPortName.setText(ports[0])
+        else:
+            self.ui.setPortName.setText("No ports found")
+        del ports
+
         self.measurementLog = None
         self.butConnectToggle: bool = False
         self.threadReachedEnd = False
@@ -97,6 +104,9 @@ class UserInterface(QtWidgets.QMainWindow):
         # CHANGE IN NEXT UI UPDATE #
         ############################
         self.ui.butReadForceMDM.setEnabled(False)
+        self.ui.setNewtonPerCount.setEnabled(False)
+        self.ui.setGaugeValue.setEnabled(False)
+        self.ui.labNewtonPerCount.setText("miliNewton per count")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -279,7 +289,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.startsensorConnect.start()
             else:
                 self.error(
-                    "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!")
+                    "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", f"Available ports: {'\n'.join([port.device for port in list_ports.comports()])}")
                 self.ui.butConnect.setText("Connect")
                 self.ui.butConnect.setEnabled(True)
 
@@ -308,6 +318,8 @@ class UserInterface(QtWidgets.QMainWindow):
             else:
                 if self.fileMDMOpen:
                     self.ui.butReadForceMDM.setEnabled(True)
+            self.ui.setNewtonPerCount.setEnabled(True)
+            self.ui.setGaugeValue.setEnabled(True)
 
         except Exception as e:
             self.error(e.__class__.__name__, e.args[0])
@@ -332,13 +344,14 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.ClosePort()
         # Give some time to Windows/ M5Din Meter to fully disconnect
         sleep(0.5)
-        self.butConnectToggle = True
         self.ui.butConnect.setText("Connect")
         self.ui.butConnect.setEnabled(True)
         self.ui.butConnect.setChecked(False)
+        self.ui.setNewtonPerCount.setEnabled(False)
+        self.ui.setGaugeValue.setEnabled(False)
         del self.sensor
 
-    def error(self, errorType: str, errorText: str) -> None:
+    def error(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
         """
         Launches the error dialog.
 
@@ -348,7 +361,7 @@ class UserInterface(QtWidgets.QMainWindow):
         :type errorText: str
         """
         self.error_ui = ErrorInterface(
-            errorType=errorType, errorText=errorText)
+            errorType=errorType, errorText=errorText, additionalInfo=additionalInfo)
         self.error_ui.show()
 
     def butFile(self) -> None:
@@ -1019,11 +1032,8 @@ class ForceSensorGUI():
         ####### SOME PARAMETERS AND STUFF ######
 
         self.ui = ui
-        # The 'zero' count value. Determined automatically each time if 0.
-        self.GaugeValue: int = int(self.ui.setGaugeValue.text())
+        self.GaugeValue: float = float(self.ui.setGaugeValue.text())
         self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.text())
-        # self.NewtonPerCount = 1  # value I set for calibration
-        self.WarningOn: bool = WarningOn  # >MaxNewton is dangerous for sensor.
         self.MaxNewton: int | float = float(self.ui.setMaxNewton.text())
 
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
@@ -1069,8 +1079,8 @@ class ForceSensorGUI():
         # DEPRICATED: use `SR()` instead.
         Reads a line of the M5Din Meter
 
-        :returns: singular read line as [ID, Time, Force]
-        :rtype: list[int, float, float]
+        :returns: singular read line as [ID, Force]
+        :rtype: list[int, float]
         """
         # 'readline()' gives a value from the serial connection in 'bytes'
         # 'decode()'   turns 'bytes' into a 'string'
@@ -1093,19 +1103,6 @@ class ForceSensorGUI():
         :returns: calculated force
         :rtype: float
         """
-
-        # x: float = self.LineReading()[2]
-
-        # I don't want old values to pile up, so I delete them all to get a fresh
-        # reading every time.
-        # self.ser.reset_input_buffer()
-
-        # Warning if a high value is read (>self.MaxNewton Newton)
-        if self.WarningOn:
-            if abs(x * self.NewtonPerCount) > self.MaxNewton:
-                print("LOAD TOO HIGH FOR SENSOR")
-                print("ABORT TO AVOID SENSOR DAMAGE")
-
         # The output, with gauge, in mN
         return (x - self.GaugeValue) * self.NewtonPerCount
 
@@ -1140,14 +1137,17 @@ class ForceSensorGUI():
                 return e
 
 class ErrorInterface(QtWidgets.QDialog):
-    def __init__(self, errorType: str, errorText: str) -> None:
+    def __init__(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
         # roep de __init__() aan van de parent class
         super().__init__()
 
         self.ui = Ui_errorWindow()
         self.ui.setupUi(self)
         self.setWindowTitle(errorType)
-        self.ui.ErrorText.setText(errorText)
+        if additionalInfo is not None:
+            self.ui.ErrorText.setText(f"{errorText}\n\n{additionalInfo}")
+        else:
+            self.ui.ErrorText.setText(errorText)
 
 
 def start() -> None:
