@@ -106,7 +106,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReadForceMDM.setEnabled(False)
         self.ui.setNewtonPerCount.setEnabled(False)
         self.ui.setGaugeValue.setEnabled(False)
-        self.ui.labNewtonPerCount.setText("miliNewton per count")
+        self.ui.labNewtonPerCount.setText("milliNewton per count")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
