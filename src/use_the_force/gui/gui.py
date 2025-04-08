@@ -50,6 +50,13 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butSwitchDirectionMDM.pressed.connect(self.switchDirectionMDM)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
 
+        ports = [port.device for port in list_ports.comports()]
+        if len(ports) > 0:
+            self.ui.setPortName.setText(ports[0])
+        else:
+            self.ui.setPortName.setText("No ports found")
+        del ports
+
         self.measurementLog = None
         self.butConnectToggle: bool = False
         self.threadReachedEnd = False
@@ -279,7 +286,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.startsensorConnect.start()
             else:
                 self.error(
-                    "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!")
+                    "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", f"Available ports: {'\n'.join([port.device for port in list_ports.comports()])}")
                 self.ui.butConnect.setText("Connect")
                 self.ui.butConnect.setEnabled(True)
 
@@ -338,7 +345,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setChecked(False)
         del self.sensor
 
-    def error(self, errorType: str, errorText: str) -> None:
+    def error(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
         """
         Launches the error dialog.
 
@@ -348,7 +355,7 @@ class UserInterface(QtWidgets.QMainWindow):
         :type errorText: str
         """
         self.error_ui = ErrorInterface(
-            errorType=errorType, errorText=errorText)
+            errorType=errorType, errorText=errorText, additionalInfo=additionalInfo)
         self.error_ui.show()
 
     def butFile(self) -> None:
