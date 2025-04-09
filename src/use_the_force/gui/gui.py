@@ -8,7 +8,7 @@ import threading
 import bisect
 import serial
 import re
-from serial.tools import list_ports
+from serial.tools import list_ports # type: ignore
 from .main_ui import Ui_MainWindow
 from .error_ui import Ui_errorWindow
 
@@ -26,7 +26,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.MDM.setVisible(False)
         self.ui.MDM.setEnabled(False)
         # new variable for use later
-        self.ui.error = self.error
+        self.ui.error = self.error # type: ignore
 
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
@@ -58,7 +58,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setPortName.setText("No ports found")
         del ports
 
-        self.measurementLog = None
         self.butConnectToggle: bool = False
         self.threadReachedEnd = False
         self.recording: bool = False
@@ -282,17 +281,22 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setPortName.setEnabled(True)
 
         else:
-            if self.ui.setPortName.text().upper() in [port.device for port in list_ports.comports()]:
+            devices: list[str] = [port.device for port in list_ports.comports()]
+            if self.ui.setPortName.text().upper() in devices:
                 self.butConnectToggle = True
                 self.ui.butFile.setEnabled(False)
                 self.startsensorConnect = threading.Thread(
                     target=self.sensorConnect)
                 self.startsensorConnect.start()
             else:
-                self.error(
-                    "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", f"Available ports: {'\n'.join([port.device for port in list_ports.comports()])}")
+                if len(devices) > 0:
+                    self.error(
+                        "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()]))
+                else:
+                    self.error("Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!")
                 self.ui.butConnect.setText("Connect")
                 self.ui.butConnect.setEnabled(True)
+            del devices
 
     def sensorConnect(self) -> None:
         """
@@ -352,7 +356,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setGaugeValue.setEnabled(False)
         del self.sensor
 
-    def error(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
+    def error(self, errorType: str, errorText: str, additionalInfo: str | None= None) -> None:
         """
         Launches the error dialog.
 
@@ -377,7 +381,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.fileOpen = False
             self.ui.butFile.setChecked(True)
             self.measurementLog.closeFile()
-            self.measurementLog = None
+            del self.measurementLog
             self.ui.butFile.setText("-")
             self.butClear()
             self.ui.butFileGraphImport.setEnabled(True)
@@ -399,23 +403,11 @@ class UserInterface(QtWidgets.QMainWindow):
                     *self.filePath.split("/")[-1].split(".")[:-1])
                 self.ui.butFileGraphImport.setEnabled(False)
                 self.ui.butFileGraphImport.setText(
-                    f"Close File: {"".join(*self.filePath.split("/")[-1].split(".")[:-1])}")
+                    f"Close File: {''.join(*self.filePath.split('/')[-1].split('.')[:-1])}")
                 if len(self.data[0]) > 0:
                     self.ui.butSave.setEnabled(False)
                     self.thread_pool.start(self.saveToLog.run)
                 self.ui.butSwitchManual.setEnabled(False)
-
-                # Honestly, I forgot what this was for.
-                # Probably fixed a bug at some point,
-                # but seems to do more harm than good now
-            # elif hasattr(self, "oldFilepath"):
-            #     self.filePath = self.oldFilepath
-            #     del self.oldFilepath
-            #     self.measurementLog = Logging(self.filePath)
-            #     self.measurementLog.createLogGUI()
-            #     self.ui.butFileGraphImport.setEnabled(False)
-            #     self.ui.butFileGraphImport.setText(
-            #         f"Close File: {"".join(*self.filePath.split("/")[-1].split(".")[:-1])}")
             else:
                 self.fileOpen = False
                 self.ui.butFile.setText("-")
@@ -433,7 +425,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.fileGraphOpen = False
             self.ui.butFileGraphImport.setChecked(True)
             self.measurementLog.closeFile()
-            self.measurementLog = None
+            del self.measurementLog
             self.ui.butFileGraphImport.setText("-")
             self.ui.butFile.setText("-")
             self.ui.butFile.setEnabled(True)
@@ -455,7 +447,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butFileGraphImport.setText(
                     *self.filePathGraph.split("/")[-1].split(".")[:-1])
                 self.ui.butFile.setText(
-                    f"Close File: {"".join(*self.filePathGraph.split("/")[-1].split(".")[:-1])}")
+                    f"Close File: {''.join(*self.filePathGraph.split('/')[-1].split('.')[:-1])}")
                 self.ui.butFile.setEnabled(False)
                 self.ui.butRecord.setEnabled(False)
                 self.ui.butClear.setEnabled(False)
@@ -587,7 +579,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
     def saveEnd(self):
         self.ui.butSave.setText("Save")
-        self.callerSelf.butFile()
+        self.butFile()
 
     def butSingleRead(self):
         self.singleReadToggle = True
@@ -681,7 +673,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.readForceMDMToggle = False
         self.ui.butDeletePreviousMDM.setEnabled(False)
         if self.switchDirectionMDMToggle:
-            self.measurementLog = None
             self.switchDirectionMDMToggle = False
             del self.txtLogMDM
             self.txtLogMDM = str()
@@ -708,8 +699,8 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.stepSizeMDM = -1*self.stepSizeMDM
             if len(self.data[0]) > 0:
-                self.switchForce = self.data[1][-1]
-                self.switchDistance = self.data[0][-1]
+                self.switchForce: float = self.data[1][-1]
+                self.switchDistance: float = self.data[0][-1]
                 del self.data
             else:
                 self.switchDistance = 0.
@@ -846,7 +837,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.fileMDMOpen = False
             self.ui.butFileMDM.setChecked(False)
-            self.measurementLog = None
+            del self.measurementLog
             self.ui.butFileMDM.setText("-")
             self.butClear()
             self.ui.butSwitchManual.setEnabled(True)
@@ -995,11 +986,11 @@ class saveToLog(QObject, QRunnable):
     startSignal = Signal()
     endSignal = Signal()
 
-    def __init__(self, callerSelf: UserInterface):
+    def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
-        self.callerSelf = callerSelf
+        self.callerSelf: UserInterface = callerSelf
 
-    def run(self):
+    def run(self) -> None:
         self.startSignal.emit()
         self.callerSelf.measurementLog.writeLogFull(self.callerSelf.data)
         self.endSignal.emit()
@@ -1075,7 +1066,7 @@ class ForceSensorGUI():
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
         self.ui.setGaugeValue.setText(f"{self.GaugeValue}")
 
-    def GetReading(self) -> list[int, float, float]:
+    def GetReading(self) -> list[int | float]:
         """
         # DEPRICATED: use `SR()` instead.
         Reads a line of the M5Din Meter
@@ -1111,9 +1102,6 @@ class ForceSensorGUI():
         """
         Always close after use.
         """
-        self.ser.flush()
-        self.ser.flushInput()
-        self.ser.flushOutput()
         self.ser.close()
 
     def SR(self) -> float:
@@ -1132,13 +1120,10 @@ class ForceSensorGUI():
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
-            try:
-                return float(returnLine.split(": ")[-1])
-            except ValueError as e:
-                return e
+            return float(returnLine.split(": ")[-1])
 
 class ErrorInterface(QtWidgets.QDialog):
-    def __init__(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
+    def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
         # roep de __init__() aan van de parent class
         super().__init__()
 

@@ -1,3 +1,6 @@
+from io import TextIOWrapper
+
+
 class Logging():
     def __init__(self, filename: str = '', NeverCloseFile: bool = False, extension: str = ".csv") -> None:
         """
@@ -6,8 +9,8 @@ class Logging():
         Allows for multiple measurements to be taken with the files increasing the `_i` identifier.
         """
         self.filename: str = filename
-        self.full_filename: str = str
-        self.HAND = 0
+        self.full_filename: str
+        self.HAND: TextIOWrapper
         self.NeverCloseFile: bool = NeverCloseFile
         self.extension: str = extension
 
@@ -35,7 +38,6 @@ class Logging():
         if not self.NeverCloseFile:
             self.HAND.close()
 
-
     def createLogGUI(self, ext='.csv') -> None:
         """
         Creates a new file for logging, GUI variant.
@@ -50,7 +52,6 @@ class Logging():
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
 
-
     def replaceFile(self, data):
         self.HAND = open(self.full_filename, "w+t")
         self.NeverCloseFile = True
@@ -58,9 +59,9 @@ class Logging():
         self.NeverCloseFile = False
         self.HAND.close()
 
-
     ### ===LOGGING FUNCTION===###
     # Puts the values in the given list into the opened log file.
+
     def writeLog(self, data) -> None:
 
         # Open file
@@ -74,14 +75,14 @@ class Logging():
             else:
                 txt = str(round(d, 8))
                 self.HAND.write(',')
-                
+
             self.HAND.write(txt)
         self.HAND.write("\n")
 
         # Close file
         if not self.NeverCloseFile:
             self.HAND.close()
-        
+
     def writeLogFull(self, data) -> None:
 
         # Open file
@@ -97,16 +98,16 @@ class Logging():
 
     ### ===READ LOG===###
 
-    def readLog(self, *, filename: str | None = None) -> list[list[float], list[float]]:
+    def readLog(self, *, filename: str | None = None) -> list[list[float]]:
         if filename == None:
             filename = self.filename
-        
+
         if self.NeverCloseFile and filename != None:
             file = self.HAND
         else:
             file = open(filename, "r")
 
-        data = [[],[]]
+        data = [[], []]
         for line in file:
             t, F = line.strip().split(",")
             data[0].append(float(t))
@@ -115,12 +116,8 @@ class Logging():
         file.close()
         return data
 
-
-
-    
     ### ===MANUAL CLOSING FUNCTION===###
     # Closes file, irregardless of whether 'NeverCloseFile' is True.
-
     def closeFile(self) -> None:
         if self.NeverCloseFile:
             self.HAND.close()
