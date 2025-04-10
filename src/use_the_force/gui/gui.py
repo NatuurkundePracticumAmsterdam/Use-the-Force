@@ -1145,8 +1145,8 @@ class ForceSensorGUI():
         """
         self.ser.flush()
         self.ser.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
