@@ -45,6 +45,9 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReadForceMDM.pressed.connect(self.readForceMDM)
         self.ui.butSwitchDirectionMDM.pressed.connect(self.switchDirectionMDM)
         self.ui.butDeletePreviousMDM.pressed.connect(self.butDeletePreviousMDM)
+        self.ui.butMove.pressed.connect(self.butMove)
+        self.ui.butUpdateVelocity.pressed.connect(self.butUpdateVelocity)
+        self.ui.butHome.pressed.connect(self.butHome)
 
         # Text boxes
         self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
@@ -936,18 +939,14 @@ class UserInterface(QtWidgets.QMainWindow):
         except:
             pass
 
-    def setMotorVelocity(self):
-        """
-        Changes the value of MotorVelocity when textbox is changed
+    def butMove(self):
+        self.sensor.SP(self.ui.setPosition.value())
+    
+    def butUpdateVelocity(self):
+        self.sensor.SV(self.ui.setVelocity.value())
 
-        Allows for changing the value while still getting live data
-        """
-        try:
-            self.sensor.MotorVelocity = float(
-                self.ui.setMotorVelocity.text())
-            
-        except:
-            pass
+    def butHome(self):
+        self.sensor.HM()
 
 
 class mainLogWorker(QObject, QRunnable):
@@ -1201,6 +1200,22 @@ class ForceSensorGUI():
         returnLine = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
+
+    def HM(self) -> None:
+        """
+        ### Home
+        Homes the steppermotor stage to the endstop.\\
+        The endstop is a physical switch that stops the motor when it is pressed. (This is position 0)\\
+        Afterwards goes up to a set position inside the firmware.
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+
 
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
