@@ -1154,6 +1154,24 @@ class ForceSensorGUI():
         if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
             raise RuntimeError(returnLine)
 
+    def SV(self, velocity: int) -> str:
+        """
+        ### Set Velocity
+        Sets the velocity of the steppermotor stage in milimeters per second.
+        
+        :param velocity: velocity to set [mm/s]
+        :type velocity: int
+        """
+        self.ser.flush()
+        self.ser.flushInput()
+        self.ser.flushOutput()
+        self.ser.write(f"{self.cmdStart}SV {velocity}{self.cmdEnd}".encode())
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
+        returnLine = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
         # roep de __init__() aan van de parent class
