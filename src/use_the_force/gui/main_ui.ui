@@ -312,8 +312,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>116</width>
-         <height>287</height>
+         <width>100</width>
+         <height>30</height>
         </rect>
        </property>
        <attribute name="label">
@@ -357,8 +357,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>116</width>
-         <height>287</height>
+         <width>100</width>
+         <height>30</height>
         </rect>
        </property>
        <attribute name="label">
@@ -627,7 +627,7 @@
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="butReGauge">
+    <widget class="QPushButton" name="butHome">
      <property name="enabled">
       <bool>false</bool>
      </property>
@@ -640,7 +640,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Tare</string>
+      <string>Home</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -746,7 +746,7 @@ Displacement Mode</string>
      <property name="geometry">
       <rect>
        <x>1</x>
-       <y>111</y>
+       <y>159</y>
        <width>118</width>
        <height>24</height>
       </rect>
@@ -772,6 +772,25 @@ Displacement Mode</string>
      </property>
      <property name="value">
       <number>-1</number>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="butReGauge">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>1</x>
+       <y>111</y>
+       <width>118</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Tare</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
      </property>
     </widget>
    </widget>
