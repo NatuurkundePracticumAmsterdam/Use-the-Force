@@ -168,7 +168,7 @@ class ForceSensor():
             except ValueError as e:
                 return e
     
-    def SV(self, velocity: int) -> str:
+    def SV(self, velocity: int) -> None:
         """
         ### Set Velocity
         Sets the velocity of the steppermotor stage in milimeters per second.
