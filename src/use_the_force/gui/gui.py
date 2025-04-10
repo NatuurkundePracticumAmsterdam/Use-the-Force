@@ -941,11 +941,20 @@ class UserInterface(QtWidgets.QMainWindow):
         Allows for changing the value while still getting live data
         """
         try:
-            if self.ui.setNewtonPerCount.text() == "-":
-                self.sensor.NewtonPerCount = float(0.)
-            else:
-                self.sensor.NewtonPerCount = float(
-                    self.ui.setNewtonPerCount.text())
+            self.sensor.NewtonPerCount = float(self.ui.setNewtonPerCount.value())
+        except:
+            pass
+
+    def setMotorVelocity(self):
+        """
+        Changes the value of MotorVelocity when textbox is changed
+
+        Allows for changing the value while still getting live data
+        """
+        try:
+            self.sensor.MotorVelocity = float(
+                self.ui.setMotorVelocity.text())
+            
         except:
             pass
 
@@ -1049,8 +1058,8 @@ class ForceSensorGUI():
         ####### SOME PARAMETERS AND STUFF ######
 
         self.ui = ui
-        self.GaugeValue: float = float(self.ui.setGaugeValue.text())
-        self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.text())
+        self.GaugeValue: float = float(self.ui.setGaugeValue.value())
+        self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.value())
         self.MaxNewton: int | float = float(self.ui.setMaxNewton.text())
 
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
@@ -1089,7 +1098,7 @@ class ForceSensorGUI():
         reads: list[float] = [self.SR()
                               for i in range(self.gaugeLines)]
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
-        self.ui.setGaugeValue.setText(f"{self.GaugeValue}")
+        self.ui.setGaugeValue.setValue(f"{self.GaugeValue}")
 
     def GetReading(self) -> list[int, float, float]:
         """
