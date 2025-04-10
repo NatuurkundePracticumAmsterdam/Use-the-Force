@@ -103,11 +103,6 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # CHANGE IN NEXT UI UPDATE #
         ############################
-        self.ui.butReadForceMDM.setEnabled(False)
-        self.ui.setNewtonPerCount.setEnabled(False)
-        self.ui.setGaugeValue.setEnabled(False)
-        self.ui.labNewtonPerCount.setText("mN/Count")
-        self.ui.butReGauge.setText("Tare")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
