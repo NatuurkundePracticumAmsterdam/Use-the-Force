@@ -32,6 +32,10 @@ class UserInterface(QtWidgets.QMainWindow):
         # CONNECTIONS #
         ###############
         # Buttons
+        ###############
+        # CONNECTIONS #
+        ###############
+        # Buttons
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
         self.ui.butReGauge.pressed.connect(self.butTare)
@@ -1145,7 +1149,27 @@ class ForceSensorGUI():
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
-            return float(returnLine.split(": ")[-1])
+            try:
+                return float(returnLine.split(": ")[-1])
+            except ValueError as e:
+                return e
+        
+    def ST(self) -> None:
+        """
+        ### Stops the Motor
+
+        Stops the motor by simulating too much force. Needs to home after being called.
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
+            raise RuntimeError(returnLine)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
 
     def SP(self, position: int) -> None:
         """
