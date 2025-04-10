@@ -30,7 +30,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
-        self.ui.butReGauge.pressed.connect(self.butReGauge)
+        self.ui.butReGauge.pressed.connect(self.butTare)
         self.ui.butRecord.pressed.connect(self.butRecord)
         self.ui.butClear.pressed.connect(self.butClear)
         self.ui.butSave.pressed.connect(self.butSave)
@@ -528,9 +528,9 @@ class UserInterface(QtWidgets.QMainWindow):
         else:
             self.butFile()
 
-    def butReGauge(self) -> None:
+    def butTare(self) -> None:
         """
-        button for ReGauging values sent from the M5Din Meter
+        button for Taring values sent from the M5Din Meter
 
         starts a thread to count down, end of thread re-enables button
         """
@@ -538,23 +538,23 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setEnabled(False)
         self.ui.butRecord.setEnabled(False)
         self.ui.butSingleRead.setEnabled(False)
-        th = threading.Thread(target=self.butReGaugeActive)
+        th = threading.Thread(target=self.butTareActive)
         th.start()
 
-    def butReGaugeActive(self) -> None:
+    def butTareActive(self) -> None:
         """
-        the actual ReGauge script
+        the actual Tare script
         """
         self.ui.butReGauge.setChecked(True)
-        self.ui.butReGauge.setText("ReGauge in 3")
+        self.ui.butReGauge.setText("Taring in 3")
         sleep(1)
-        self.ui.butReGauge.setText("ReGauge in 2")
+        self.ui.butReGauge.setText("Taring in 2")
         sleep(1)
-        self.ui.butReGauge.setText("ReGauge in 1")
+        self.ui.butReGauge.setText("Taring in 1")
         sleep(1)
         self.ui.butReGauge.setText("...")
         self.sensor.reGauge()
-        self.ui.butReGauge.setText("ReGauge")
+        self.ui.butReGauge.setText("Tare")
         self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
         if not self.MDMActive:
