@@ -124,8 +124,11 @@ class ForceSensor():
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
-            return int(returnLine.split(": ")[-1])
-
+            try:
+                return int(returnLine.split(": ")[-1])
+            except ValueError as e:
+                return e
+    
     def SV(self, velocity: int) -> None:
         """
         ### Set Velocity

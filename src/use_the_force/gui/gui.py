@@ -1140,7 +1140,7 @@ class ForceSensorGUI():
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
 
-    def SV(self, velocity: int) -> str:
+    def SV(self, velocity: int) -> None:
         """
         ### Set Velocity
         Sets the velocity of the steppermotor stage in milimeters per second.
