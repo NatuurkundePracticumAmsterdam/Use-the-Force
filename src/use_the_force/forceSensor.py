@@ -426,3 +426,36 @@ class ForceSensor():
         returnLine = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
+        time, force = returnLine.split(": ")[-1].split(";")
+        return [int(time), float(force)]
+
+    def AB(self) -> None:
+        """
+        ### Abort Reading
+
+        Aborts constant reading (CR)
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}AB{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        
+    def ST(self) -> None:
+        """
+        ### Stops the Motor
+
+        Stops the motor by simulating too much force. Needs to home after being called.
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
+            raise RuntimeError(returnLine)
