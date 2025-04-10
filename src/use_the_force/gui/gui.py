@@ -1154,6 +1154,24 @@ class ForceSensorGUI():
         if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
             raise RuntimeError(returnLine)
 
+    def SP(self, position: int) -> None:
+        """
+        ### Set Position
+        Sets the position of the steppermotor stage in milimeters.
+        
+        :param position: position to set from bottom [mm]
+        :type position: int
+        """
+        self.ser.flush()
+        self.ser.flushInput()
+        self.ser.flushOutput()
+        self.ser.write(f"{self.cmdStart}SP {position}{self.cmdEnd}".encode())
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
+        returnLine = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+
     def SV(self, velocity: int) -> str:
         """
         ### Set Velocity
