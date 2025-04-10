@@ -3,7 +3,14 @@ import serial
 
 
 class ForceSensor():
-    def __init__(self, PortName: str = "/dev/ttyACM0", GaugeValue: int = 0, NewtonPerVolt: float = 0.0000154, WarningOn: bool = True, MaxNewton: int | float = 5, **kwargs) -> None:
+    def __init__(self, 
+                 PortName: str = "/dev/ttyACM0", 
+                 GaugeValue: int = 0, 
+                 NewtonPerVolt: float = 0.0000154, 
+                 WarningOn: bool = True, 
+                 MaxNewton: int | float = 5, 
+                 **kwargs
+                 ) -> None:
         """
         Opens up the serial port, checks the gauge value and makes sure data is available.
 
@@ -24,10 +31,13 @@ class ForceSensor():
         self.timeout: float = float(kwargs.pop('timeout', 2.))
 
         # 150/1000 # base delay of the M5Din Meter to send a response [seconds]
-        self.stdDelay: float = 0
+        self.stdDelay: float = 0.
         self.cmdStart: str = str(kwargs.pop('cmdStart', "#"))
         self.cmdEnd: str = str(kwargs.pop('cmdEnd', ";"))
         self.currentReads: list[list[float]] = [[], []]
+
+        self.minPos: int = int(kwargs.pop('minPos', 1))  # [mm]
+        self.maxPos: int = int(kwargs.pop('maxPos', 46))  # [mm]
 
         self.T0: int = perf_counter_ns()
 
@@ -100,13 +110,16 @@ class ForceSensor():
         :param position: position to set from bottom [mm]
         :type position: int
         """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}SP {position}{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
+        if position <= self.maxPos and position >= self.minPos:
+            self.ser.flush()
+            self.ser.write(f"{self.cmdStart}SP {position}{self.cmdEnd}".encode())
+            if self.stdDelay > 0:
+                sleep(self.stdDelay)
+            returnLine: str = self.ser.read_until().decode().strip()
+            if returnLine.split(":")[0] == "[ERROR]":
+                raise RuntimeError(returnLine)
+        else:
+            raise ValueError(f"Position {position} is out of range ({self.minPos}, {self.maxPos})")
 
     def GP(self) -> int:
         """
