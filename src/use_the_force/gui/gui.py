@@ -28,29 +28,39 @@ class UserInterface(QtWidgets.QMainWindow):
         # new variable for use later
         self.ui.error = self.error # type: ignore
 
+        ###############
+        # CONNECTIONS #
+        ###############
+        # Buttons
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
         self.ui.butReGauge.pressed.connect(self.butTare)
         self.ui.butRecord.pressed.connect(self.butRecord)
         self.ui.butClear.pressed.connect(self.butClear)
         self.ui.butSave.pressed.connect(self.butSave)
-        self.ui.setNewtonPerCount.textEdited.connect(self.setNewtonPerCount)
-        self.ui.setPlotTimerInterval.textEdited.connect(
-            self.updatePlotTimerInterval)
         self.ui.butFileGraphImport.pressed.connect(self.butFileGraph)
         self.ui.butSingleRead.pressed.connect(self.butSingleRead)
         self.ui.butSwitchManual.pressed.connect(self.butSwitchMDM)
         self.ui.butFileMDM.pressed.connect(self.butFileMDM)
+        self.ui.butReadForceMDM.pressed.connect(self.readForceMDM)
+        self.ui.butSwitchDirectionMDM.pressed.connect(self.switchDirectionMDM)
+        self.ui.butDeletePreviousMDM.pressed.connect(self.butDeletePreviousMDM)
+
+        # Text boxes
+        self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
+        self.ui.setPlotTimerInterval.textEdited.connect(
+            self.updatePlotTimerInterval)
         self.ui.setLineReadsMDM.valueChanged.connect(
             self.singleReadLinesForcesUpdate)
         self.ui.setLineSkipsMDM.valueChanged.connect(
             self.singleReadSkipsUpdate)
         self.ui.setStepSizeMDM.valueChanged.connect(self.singleReadStepUpdate)
-        self.ui.butReadForceMDM.pressed.connect(self.readForceMDM)
-        self.ui.butSwitchDirectionMDM.pressed.connect(self.switchDirectionMDM)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
-        self.ui.butDeletePreviousMDM.pressed.connect(self.butDeletePreviousMDM)
+        
 
+        ###############
+        # Check Ports #
+        ###############
         ports = [port.device for port in list_ports.comports()]
         if len(ports) > 0:
             self.ui.setPortName.setText(ports[0])
@@ -58,6 +68,10 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setPortName.setText("No ports found")
         del ports
 
+        ###################
+        # INITIALIZE VARS #
+        ###################
+        self.measurementLog = None
         self.butConnectToggle: bool = False
         self.threadReachedEnd = False
         self.recording: bool = False
@@ -76,12 +90,18 @@ class UserInterface(QtWidgets.QMainWindow):
         self.reMDMMatch = re.compile(r"\[[A-Za-z0-9]+\]")
         self.data = [[], []]
 
+        ###################
+        # INITIALIZE PLOT #
+        ###################
         self.plot(clrBg="default")
         self.plotMDM()
 
         # Plot timer interval in ms
         self.plotTimerInterval: int = 100
 
+        ##################
+        # MULTITHREADING #
+        ##################
         self.plotTimer = QTimer()
         self.plotTimer.timeout.connect(self.updatePlot)
 
@@ -102,6 +122,7 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # CHANGE IN NEXT UI UPDATE #
         ############################
+        # TODO: add screen for movement options and movement cycles.
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
