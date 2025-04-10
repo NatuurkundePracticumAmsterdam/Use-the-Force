@@ -32,10 +32,6 @@ class UserInterface(QtWidgets.QMainWindow):
         # CONNECTIONS #
         ###############
         # Buttons
-        ###############
-        # CONNECTIONS #
-        ###############
-        # Buttons
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
         self.ui.butReGauge.pressed.connect(self.butTare)
@@ -1055,7 +1051,6 @@ class ForceSensorGUI():
         self.ui = ui
         self.GaugeValue: float = float(self.ui.setGaugeValue.value())
         self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.value())
-        self.MaxNewton: int | float = float(self.ui.setMaxNewton.text())
 
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
 
@@ -1093,7 +1088,7 @@ class ForceSensorGUI():
         reads: list[float] = [self.SR()
                               for i in range(self.gaugeLines)]
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
-        self.ui.setGaugeValue.setValue(f"{self.GaugeValue}")
+        self.ui.setGaugeValue.setValue(self.GaugeValue)
 
     def GetReading(self) -> list[int | float]:
         """
