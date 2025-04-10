@@ -454,8 +454,8 @@ class ForceSensor():
         if self.stdDelay > 0:
             sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
+        if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
             raise RuntimeError(returnLine)
         returnLine: str = self.ser.read_until().decode().strip()
-        if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
+        if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
