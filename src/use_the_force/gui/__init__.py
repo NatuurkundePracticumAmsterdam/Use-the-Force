@@ -15,4 +15,4 @@ __all__ = [
     "start"
     "Ui_MainWindow",
     "Ui_errorWindow"
-]
+] # type: ignore

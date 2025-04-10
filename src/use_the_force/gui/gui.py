@@ -8,7 +8,7 @@ import threading
 import bisect
 import serial
 import re
-from serial.tools import list_ports
+from serial.tools import list_ports # type: ignore
 from .main_ui import Ui_MainWindow
 from .error_ui import Ui_errorWindow
 
@@ -26,7 +26,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.MDM.setVisible(False)
         self.ui.MDM.setEnabled(False)
         # new variable for use later
-        self.ui.error = self.error
+        self.ui.error = self.error # type: ignore
 
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
@@ -58,7 +58,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setPortName.setText("No ports found")
         del ports
 
-        self.measurementLog = None
         self.butConnectToggle: bool = False
         self.threadReachedEnd = False
         self.recording: bool = False
@@ -282,17 +281,22 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setPortName.setEnabled(True)
 
         else:
-            if self.ui.setPortName.text().upper() in [port.device for port in list_ports.comports()]:
+            devices: list[str] = [port.device for port in list_ports.comports()]
+            if self.ui.setPortName.text().upper() in devices:
                 self.butConnectToggle = True
                 self.ui.butFile.setEnabled(False)
                 self.startsensorConnect = threading.Thread(
                     target=self.sensorConnect)
                 self.startsensorConnect.start()
             else:
-                self.error(
-                    "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", f"Available ports: {'\n'.join([port.device for port in list_ports.comports()])}")
+                if len(devices) > 0:
+                    self.error(
+                        "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()]))
+                else:
+                    self.error("Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!")
                 self.ui.butConnect.setText("Connect")
                 self.ui.butConnect.setEnabled(True)
+            del devices
 
     def sensorConnect(self) -> None:
         """
@@ -352,7 +356,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setGaugeValue.setEnabled(False)
         del self.sensor
 
-    def error(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
+    def error(self, errorType: str, errorText: str, additionalInfo: str | None= None) -> None:
         """
         Launches the error dialog.
 
@@ -377,7 +381,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.fileOpen = False
             self.ui.butFile.setChecked(True)
             self.measurementLog.closeFile()
-            self.measurementLog = None
+            del self.measurementLog
             self.ui.butFile.setText("-")
             self.butClear()
             self.ui.butFileGraphImport.setEnabled(True)
@@ -399,23 +403,11 @@ class UserInterface(QtWidgets.QMainWindow):
                     *self.filePath.split("/")[-1].split(".")[:-1])
                 self.ui.butFileGraphImport.setEnabled(False)
                 self.ui.butFileGraphImport.setText(
-                    f"Close File: {"".join(*self.filePath.split("/")[-1].split(".")[:-1])}")
+                    f"Close File: {''.join(*self.filePath.split('/')[-1].split('.')[:-1])}")
                 if len(self.data[0]) > 0:
                     self.ui.butSave.setEnabled(False)
                     self.thread_pool.start(self.saveToLog.run)
                 self.ui.butSwitchManual.setEnabled(False)
-
-                # Honestly, I forgot what this was for.
-                # Probably fixed a bug at some point,
-                # but seems to do more harm than good now
-            # elif hasattr(self, "oldFilepath"):
-            #     self.filePath = self.oldFilepath
-            #     del self.oldFilepath
-            #     self.measurementLog = Logging(self.filePath)
-            #     self.measurementLog.createLogGUI()
-            #     self.ui.butFileGraphImport.setEnabled(False)
-            #     self.ui.butFileGraphImport.setText(
-            #         f"Close File: {"".join(*self.filePath.split("/")[-1].split(".")[:-1])}")
             else:
                 self.fileOpen = False
                 self.ui.butFile.setText("-")
@@ -433,7 +425,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.fileGraphOpen = False
             self.ui.butFileGraphImport.setChecked(True)
             self.measurementLog.closeFile()
-            self.measurementLog = None
+            del self.measurementLog
             self.ui.butFileGraphImport.setText("-")
             self.ui.butFile.setText("-")
             self.ui.butFile.setEnabled(True)
@@ -455,7 +447,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butFileGraphImport.setText(
                     *self.filePathGraph.split("/")[-1].split(".")[:-1])
                 self.ui.butFile.setText(
-                    f"Close File: {"".join(*self.filePathGraph.split("/")[-1].split(".")[:-1])}")
+                    f"Close File: {''.join(*self.filePathGraph.split('/')[-1].split('.')[:-1])}")
                 self.ui.butFile.setEnabled(False)
                 self.ui.butRecord.setEnabled(False)
                 self.ui.butClear.setEnabled(False)
@@ -587,7 +579,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
     def saveEnd(self):
         self.ui.butSave.setText("Save")
-        self.callerSelf.butFile()
+        self.butFile()
 
     def butSingleRead(self):
         self.singleReadToggle = True
@@ -681,7 +673,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.readForceMDMToggle = False
         self.ui.butDeletePreviousMDM.setEnabled(False)
         if self.switchDirectionMDMToggle:
-            self.measurementLog = None
             self.switchDirectionMDMToggle = False
             del self.txtLogMDM
             self.txtLogMDM = str()
@@ -708,8 +699,8 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.stepSizeMDM = -1*self.stepSizeMDM
             if len(self.data[0]) > 0:
-                self.switchForce = self.data[1][-1]
-                self.switchDistance = self.data[0][-1]
+                self.switchForce: float = self.data[1][-1]
+                self.switchDistance: float = self.data[0][-1]
                 del self.data
             else:
                 self.switchDistance = 0.
@@ -846,7 +837,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.fileMDMOpen = False
             self.ui.butFileMDM.setChecked(False)
-            self.measurementLog = None
+            del self.measurementLog
             self.ui.butFileMDM.setText("-")
             self.butClear()
             self.ui.butSwitchManual.setEnabled(True)
@@ -950,9 +941,9 @@ class mainLogWorker(QObject, QRunnable):
 
         # a time of `-1` will be seen as infinit and function will keep reading
         if float(self.callerSelf.ui.setTime.text()) >= 0. and self.callerSelf.ui.setTime.text() != "-1":
-            measurementTime = float(self.callerSelf.ui.setTime.text())*1e9
+            measurementTime = float(self.callerSelf.ui.setTime.text())
         else:
-            measurementTime = -1*1e9
+            measurementTime = -1
             self.callerSelf.ui.setTime.setText("-1")
 
         self.startSignal.emit()
@@ -963,19 +954,17 @@ class mainLogWorker(QObject, QRunnable):
         else:
             time: float = self.callerSelf.data[0][-1]
             self.callerSelf.sensor.T0 = perf_counter_ns() - int(time*1e9+0.5)
-
-        while (time < measurementTime or measurementTime == -1*1e9) and self.callerSelf.recording:
-            # time in nanoseconds, force reading from sensor
+        while (time < measurementTime or measurementTime == -1) and self.callerSelf.recording:
             try:
-                time, measuredForce = self.callerSelf.sensor.GetReading()
-                Force = self.callerSelf.sensor.ForceFix(measuredForce)
-                timeS = time/1e9
-                self.callerSelf.data[0].append(timeS)
+                Force = self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
+                time = perf_counter_ns() - self.callerSelf.sensor.T0
+                time = round(time/1e9, 8)
+                self.callerSelf.data[0].append(time)
                 self.callerSelf.data[1].append(Force)
 
                 if not self.logLess:
-                    # logs: t(s), F(mN)
-                    self.callerSelf.measurementLog.writeLog([timeS, Force])
+                    # logs: t[s], F[mN]
+                    self.callerSelf.measurementLog.writeLog([time, Force])
 
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
@@ -997,11 +986,11 @@ class saveToLog(QObject, QRunnable):
     startSignal = Signal()
     endSignal = Signal()
 
-    def __init__(self, callerSelf: UserInterface):
+    def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
-        self.callerSelf = callerSelf
+        self.callerSelf: UserInterface = callerSelf
 
-    def run(self):
+    def run(self) -> None:
         self.startSignal.emit()
         self.callerSelf.measurementLog.writeLogFull(self.callerSelf.data)
         self.endSignal.emit()
@@ -1017,10 +1006,9 @@ class singleReadWorker(QObject, QRunnable):
 
     def run(self):
         self.startSignal.emit()
-        _skip = [self.callerSelf.sensor.GetReading()[1]
+        _skip = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
                  for i in range(0, self.callerSelf.singleReadSkips)]
-        forces = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.GetReading()[
-                                                  1]) for i in range(0, self.callerSelf.singleReadForces)]
+        forces = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR()) for i in range(0, self.callerSelf.singleReadForces)]
         self.callerSelf.singleReadForce = round(sum(
             forces)/self.callerSelf.singleReadForces,8)
         self.endSignal.emit()
@@ -1042,13 +1030,14 @@ class ForceSensorGUI():
 
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
 
-        self.baudrate: int = kwargs.pop('baudrate', 57600)
-        self.timeout: float = kwargs.pop('timeout', 2.)
+        self.baudrate: int = kwargs.pop('baudrate', 115200)
+        self.timeout: float = kwargs.pop('timeout', 5.)
 
-        # M5Din Meter only gives back values with 6 decimals max
-        self.gaugeRound: int = 6
-        self.gaugeLines: int = 10
-        self.gaugeSkipLines: int = 10
+        self.gaugeRound: int = kwargs.pop("gaugeLines",6)
+        self.gaugeLines: int = kwargs.pop("gaugeLines",10)
+        self.gaugeSkipLines: int = kwargs.pop("gaugeSkipLines", 3)
+        self.cmdStart: str = kwargs.pop("cmdStart", "#")
+        self.cmdEnd: str = kwargs.pop("cmdEnd", ";")
 
         self.T0 = perf_counter_ns()
 
@@ -1062,43 +1051,24 @@ class ForceSensorGUI():
                                  baudrate=self.baudrate,
                                  timeout=self.timeout
                                  )
-
-        # Test whether we are receiving any data or not.
-        try:
-            line = self.ser.readline()
-            decodedLine = line.decode(self.encoding)
-            if decodedLine == "":
-                raise RuntimeError("Loadsensor returns no data")
-
-            if self.GaugeValue == 0:
-                self.reGauge()
-
-        except UnicodeDecodeError as e:
-            print("""
-could not decode incoming data!
-Connection maintained for debugging.
-Data: 
-""",
-                  line,
-                  """
-Decoded: 
-""" + str(line.decode(self.encoding, errors="replace"))
-            )
+        if self.GaugeValue == 0.:
+            self.reGauge()
 
     def reGauge(self):
         """
         # !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
         """
-        self.ser.reset_input_buffer()
-        skips: list[float] = [self.GetReading()[1]
+        skips: list[float] = [self.SR()
                               for i in range(self.gaugeSkipLines)]
-        reads: list[float] = [self.GetReading()[1]
+        del skips
+        reads: list[float] = [self.SR()
                               for i in range(self.gaugeLines)]
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
         self.ui.setGaugeValue.setText(f"{self.GaugeValue}")
 
-    def GetReading(self) -> list[int, float, float]:
+    def GetReading(self) -> list[int | float]:
         """
+        # DEPRICATED: use `SR()` instead.
         Reads a line of the M5Din Meter
 
         :returns: singular read line as [ID, Force]
@@ -1126,36 +1096,34 @@ Decoded:
         :rtype: float
         """
         # The output, with gauge, in mN
-        return (x - self.GaugeValue) * self.NewtonPerCount * 1000
+        return (x - self.GaugeValue) * self.NewtonPerCount
 
     def ClosePort(self) -> None:
         """
         Always close after use.
         """
-        self.ser.flush()
-        self.ser.flushInput()
-        self.ser.flushOutput()
         self.ser.close()
 
-    def TestSensor(self, lines: int = 100) -> None:
+    def SR(self) -> float:
         """
-        Opens the port and prints some values on screen.
-        Primarily a debugging tool.
+        ### Single Read
+        Reads the force a single time.
 
-        Tests if the decoding is right and should show the decoded values after the "-->"
-
-        :param lines: how many lines to read, default: `100`
-        :type lines: int
+        :return: read force
+        :rtype: float
         """
-        for i in range(lines):
-            line = self.ser.readline()
-            decodedLine = line.decode(self.encoding, errors="replace")
-            print(line, " --> ", decodedLine)
-            print("Force: " + str(float(decodedLine.split(",")[1])) + " N")
-
+        self.ser.reset_input_buffer()
+        self.ser.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
+        returnLine = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        else:
+            return float(returnLine.split(": ")[-1])
 
 class ErrorInterface(QtWidgets.QDialog):
-    def __init__(self, errorType: str, errorText: str, additionalInfo: str = None) -> None:
+    def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
         # roep de __init__() aan van de parent class
         super().__init__()
 
