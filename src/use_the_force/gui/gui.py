@@ -331,6 +331,12 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         self.ui.butConnect.setText("Connecting...")
         self.sensor()
+        if self.sensor.failed:
+            self.sensor.failed = False
+            self.ui.butConnect.setText("Connect")
+            self.butConnectToggle = False
+            self.ui.butConnect.setEnabled(True)
+            return
         # needs time or it will break
         # something to do with the M5Stick probably
         sleep(0.5)
@@ -1054,6 +1060,7 @@ class ForceSensorGUI(QObject, QRunnable):
     def __init__(self, ui) -> None:
         super().__init__()
         self.ui = ui
+        self.failed: bool = False
 
     def __call__(self, **kwargs) -> None:
         """
@@ -1084,10 +1091,15 @@ class ForceSensorGUI(QObject, QRunnable):
         # The 'COM'-port depends on which plug is used at the back of the computer.
         # To find the correct port: go to Windows Settings, Search for Device Manager,
         # and click the tab "Ports (COM&LPT)".
-        self.ser = serial.Serial(self.PortName,
+        try:
+            self.ser = serial.Serial(self.PortName,
                                  baudrate=self.baudrate,
                                  timeout=self.timeout
                                  )
+        except Exception as e:
+            self.failed = True
+            self.ui.errorMessage = [e.__class__.__name__, e.args[0]+"\n\nCheck if Port is not already in use."]
+            self.errorSignal.emit()
 
     def reGauge(self) -> None:
         """
