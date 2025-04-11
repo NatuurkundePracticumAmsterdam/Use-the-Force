@@ -131,11 +131,6 @@ class UserInterface(QtWidgets.QMainWindow):
         # CHANGE IN NEXT UI UPDATE #
         ############################
         # TODO: add screen for movement options and movement cycles.
-        self.ui.butMove.setEnabled(False)
-        self.ui.butUpdateVelocity.setEnabled(False)
-        self.ui.butHome.setCheckable(False)
-        self.ui.setVelocity.setValue(100)
-        self.ui.setNewtonPerCount.setValue(1.)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
