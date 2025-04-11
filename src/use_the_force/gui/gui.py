@@ -131,6 +131,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # CHANGE IN NEXT UI UPDATE #
         ############################
         # TODO: add screen for movement options and movement cycles.
+        self.ui.setVelocity.setValue(60) # 1mm/s
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -273,13 +274,13 @@ class UserInterface(QtWidgets.QMainWindow):
     def updatePlotTitle(self) -> None:
         self.ui.graph1.setTitle(self.ui.title.text(), color=(255,255,255))
 
-    def startPlotTimer(self):
+    def startPlotTimer(self) -> None:
         """
         Start the QTimer in the main thread when the signal is emitted.
         """
         self.plotTimer.start()
 
-    def stopPlotTimer(self):
+    def stopPlotTimer(self) -> None:
         """
         Stop the QTimer
         """
@@ -499,11 +500,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSave.setEnabled(True)
             self.ui.butSingleRead.setEnabled(True)
             self.ui.butSwitchManual.setEnabled(True)
-            # if not self.threadReachedEnd:
-            #     if self.ui.butFile.text() != "-":
-            #         self.startMainLog.join()
-            #     else:
-            #         self.startMainLogLess.join()
 
         else:
             self.recording = True
@@ -599,14 +595,14 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butSave.setEnabled(False)
                 self.thread_pool.start(self.saveToLog.run)
 
-    def saveStart(self):
+    def saveStart(self) -> None:
         self.ui.butSave.setText(f"Saving {len(self.data)}")
 
-    def saveEnd(self):
+    def saveEnd(self) -> None:
         self.ui.butSave.setText("Save")
         self.butFile()
 
-    def butSingleRead(self):
+    def butSingleRead(self) -> None:
         self.singleReadToggle = True
         self.ui.butSingleRead.setEnabled(False)
         self.ui.butRecord.setEnabled(False)
@@ -614,7 +610,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setEnabled(False)
         self.thread_pool.start(self.singleReadWorker.run)
 
-    def singleReadEnd(self):
+    def singleReadEnd(self) -> None:
         if self.MDMActive:
             self.ui.butSingleRead.setEnabled(True)
             if self.fileMDMOpen:
@@ -667,19 +663,19 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
 
-    def singleReadSkipsUpdate(self):
+    def singleReadSkipsUpdate(self) -> None:
         try:
             self.singleReadSkips = int(self.ui.setLineSkipsMDM.text())
         except ValueError:
             pass
 
-    def singleReadLinesForcesUpdate(self):
+    def singleReadLinesForcesUpdate(self) -> None:
         try:
             self.singleReadForces = int(self.ui.setLineReadsMDM.text())
         except ValueError:
             pass
 
-    def singleReadStepUpdate(self):
+    def singleReadStepUpdate(self) -> None:
         try:
             self.stepSizeMDM = float(self.ui.setStepSizeMDM.text())
             if self.switchDirectionMDMToggle:
@@ -687,12 +683,12 @@ class UserInterface(QtWidgets.QMainWindow):
         except ValueError:
             pass
 
-    def readForceMDM(self):        
+    def readForceMDM(self) -> None:        
         self.ui.butReadForceMDM.setEnabled(False)
         self.ui.butSwitchDirectionMDM.setEnabled(False)
         self.thread_pool.start(self.singleReadWorker.run)
 
-    def switchDirectionMDM(self):
+    def switchDirectionMDM(self) -> None:
         self.measurementLog.closeFile()
         del self.measurementLog
         self.readForceMDMToggle = False
@@ -749,7 +745,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
             self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
 
-    def butSwitchMDM(self):
+    def butSwitchMDM(self) -> None:
         self.butClear()
         if self.MDMActive:
             self.MDMActive = False
@@ -784,7 +780,7 @@ class UserInterface(QtWidgets.QMainWindow):
             # MDM
             self.ui.MDM.setEnabled(True)
 
-    def plotMDM(self, **kwargs):
+    def plotMDM(self, **kwargs) -> None:
         pg.setConfigOption("foreground", kwargs.pop("clrFg", "k"))
         pg.setConfigOption("background", kwargs.pop("clrBg", "w"))
         # self.ui.graphMDM.setBackground(background=kwargs.pop("clrBg", "w"))
@@ -934,7 +930,7 @@ class UserInterface(QtWidgets.QMainWindow):
         except:
             pass
 
-    def setNewtonPerCount(self):
+    def setNewtonPerCount(self) -> None:
         """
         Changes the value of NewtonPerCount when textbox is changed
 
@@ -945,18 +941,18 @@ class UserInterface(QtWidgets.QMainWindow):
         except:
             pass
 
-    def butMove(self):
+    def butMove(self) -> None:
         self.sensor.SP(self.ui.setPosition.value())
     
-    def butUpdateVelocity(self):
+    def butUpdateVelocity(self) -> None:
         self.sensor.SV(self.ui.setVelocity.value())
 
-    def butHome(self):
+    def butHome(self) -> None:
         self.butUpdateVelocity()
         self.sensor.HM()
         self.ui.butMove.setEnabled(True)
 
-    def butForceStop(self):
+    def butForceStop(self) -> None:
         self.sensor.ST()
         self.ui.butHome.setEnabled(True)
         self.ui.butMove.setEnabled(False)
@@ -967,12 +963,12 @@ class mainLogWorker(QObject, QRunnable):
     endSignal = Signal()
     errorSignal = Signal()
 
-    def __init__(self, callerSelf: UserInterface):
+    def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
         self.callerSelf = callerSelf
         self.logLess = bool()
 
-    def run(self):
+    def run(self) -> None:
         if not self.logLess:
             self.callerSelf.data = self.callerSelf.measurementLog.readLog(
                 filename=self.callerSelf.filePath)
@@ -1038,11 +1034,11 @@ class singleReadWorker(QObject, QRunnable):
     startSignal = Signal()
     endSignal = Signal()
 
-    def __init__(self, callerSelf: UserInterface):
+    def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
         self.callerSelf = callerSelf
 
-    def run(self):
+    def run(self) -> None:
         self.startSignal.emit()
         _skip = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
                  for i in range(0, self.callerSelf.singleReadSkips)]
@@ -1093,7 +1089,7 @@ class ForceSensorGUI(QObject, QRunnable):
                                  timeout=self.timeout
                                  )
 
-    def reGauge(self):
+    def reGauge(self) -> None:
         """
         # !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
         """
@@ -1167,7 +1163,6 @@ class ForceSensorGUI(QObject, QRunnable):
                 self.errorSignal.emit()
                 return 0.
 
-        
     def ST(self) -> None:
         """
         ### Stops the Motor
