@@ -1,7 +1,7 @@
 import sys
 from time import perf_counter_ns, sleep
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal
+from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot
 from PySide6.QtGui import QCloseEvent
 import pyqtgraph as pg
 import threading
@@ -26,7 +26,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.MDM.setVisible(False)
         self.ui.MDM.setEnabled(False)
         # new variable for use later
-        self.ui.error = self.error # type: ignore
+
 
         ###############
         # CONNECTIONS #
@@ -48,6 +48,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butMove.pressed.connect(self.butMove)
         self.ui.butUpdateVelocity.pressed.connect(self.butUpdateVelocity)
         self.ui.butHome.pressed.connect(self.butHome)
+        self.ui.butForceStop.pressed.connect(self.butForceStop)
 
         # Text boxes
         self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
@@ -92,6 +93,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.txtLogMDM: str = str()
         self.reMDMMatch = re.compile(r"\[[A-Za-z0-9]+\]")
         self.data = [[], []]
+        self.ui.errorMessage = []
 
         ###################
         # INITIALIZE PLOT #
@@ -105,6 +107,9 @@ class UserInterface(QtWidgets.QMainWindow):
         ##################
         # MULTITHREADING #
         ##################
+        self.sensor = ForceSensorGUI(ui=self.ui)
+        self.sensor.errorSignal.connect(self.error)
+
         self.plotTimer = QTimer()
         self.plotTimer.timeout.connect(self.updatePlot)
 
@@ -126,6 +131,11 @@ class UserInterface(QtWidgets.QMainWindow):
         # CHANGE IN NEXT UI UPDATE #
         ############################
         # TODO: add screen for movement options and movement cycles.
+        self.ui.butMove.setEnabled(False)
+        self.ui.butUpdateVelocity.setEnabled(False)
+        self.ui.butHome.setCheckable(False)
+        self.ui.setVelocity.setValue(100)
+        self.ui.setNewtonPerCount.setValue(1.)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -310,9 +320,9 @@ class UserInterface(QtWidgets.QMainWindow):
             else:
                 if len(devices) > 0:
                     self.error(
-                        "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()]))
+                        ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()])])
                 else:
-                    self.error("Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!")
+                    self.error(["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!"])
                 self.ui.butConnect.setText("Connect")
                 self.ui.butConnect.setEnabled(True)
             del devices
@@ -324,34 +334,34 @@ class UserInterface(QtWidgets.QMainWindow):
         If connection fails, will raise an error dialog with the error.
         """
         self.ui.butConnect.setText("Connecting...")
-        try:
-            self.sensor = ForceSensorGUI(ui=self.ui)
-            # needs time or it will break
-            # something to do with the M5Stick probably
-            sleep(0.5)
-            self.ui.butReGauge.setEnabled(True)
-            self.ui.butConnect.setText("Connected")
-            self.ui.butSingleRead.setEnabled(True)
-            self.ui.butConnect.setChecked(True)
-            self.ui.setPortName.setEnabled(False)
-            if not self.MDMActive:
-                self.ui.butRecord.setEnabled(True)
-                if not self.fileOpen:
-                    self.butClear()
-                self.ui.butFile.setEnabled(True)
-            else:
-                if self.fileMDMOpen:
-                    self.ui.butReadForceMDM.setEnabled(True)
-            self.ui.setNewtonPerCount.setEnabled(True)
-            self.ui.setGaugeValue.setEnabled(True)
-
-        except Exception as e:
-            self.error(e.__class__.__name__, e.args[0])
-            # Allow the stick (and windows) some time to restart/ de-initialize the connection
-            sleep(0.5)
+        self.sensor()
+        # needs time or it will break
+        # something to do with the M5Stick probably
+        sleep(0.5)
+        if self.sensor.SR() == 0.:
+            self.sensor.ClosePort()
             self.ui.butConnect.setText("Connect")
             self.butConnectToggle = False
-
+            self.ui.butConnect.setEnabled(True)
+            return
+        self.ui.butReGauge.setEnabled(True)
+        self.ui.butConnect.setText("Connected")
+        self.ui.butSingleRead.setEnabled(True)
+        self.ui.butConnect.setChecked(True)
+        self.ui.setPortName.setEnabled(False)
+        if not self.MDMActive:
+            self.ui.butRecord.setEnabled(True)
+            if not self.fileOpen:
+                self.butClear()
+            self.ui.butFile.setEnabled(True)
+        else:
+            if self.fileMDMOpen:
+                self.ui.butReadForceMDM.setEnabled(True)
+        self.ui.setNewtonPerCount.setEnabled(True)
+        self.ui.setGaugeValue.setEnabled(True)
+        self.ui.butHome.setEnabled(True)
+        self.ui.butForceStop.setEnabled(True)
+        self.ui.butUpdateVelocity.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
 
     def sensorDisconnect(self) -> None:
@@ -375,7 +385,9 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setGaugeValue.setEnabled(False)
         del self.sensor
 
-    def error(self, errorType: str, errorText: str, additionalInfo: str | None= None) -> None:
+    @Slot(str, str, str)
+    @Slot(str, str, None)
+    def error(self) -> None:
         """
         Launches the error dialog.
 
@@ -384,8 +396,7 @@ class UserInterface(QtWidgets.QMainWindow):
         :param errorText: text why the error occured
         :type errorText: str
         """
-        self.error_ui = ErrorInterface(
-            errorType=errorType, errorText=errorText, additionalInfo=additionalInfo)
+        self.error_ui = ErrorInterface(*self.ui.errorMessage)
         self.error_ui.show()
 
     def butFile(self) -> None:
@@ -946,12 +957,20 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.SV(self.ui.setVelocity.value())
 
     def butHome(self):
+        self.butUpdateVelocity()
         self.sensor.HM()
+        self.ui.butMove.setEnabled(True)
+
+    def butForceStop(self):
+        self.sensor.ST()
+        self.ui.butHome.setEnabled(True)
+        self.ui.butMove.setEnabled(False)
 
 
 class mainLogWorker(QObject, QRunnable):
     startSignal = Signal()
     endSignal = Signal()
+    errorSignal = Signal()
 
     def __init__(self, callerSelf: UserInterface):
         super().__init__()
@@ -964,11 +983,11 @@ class mainLogWorker(QObject, QRunnable):
                 filename=self.callerSelf.filePath)
 
         # a time of `-1` will be seen as infinit and function will keep reading
-        if float(self.callerSelf.ui.setTime.text()) >= 0. and self.callerSelf.ui.setTime.text() != "-1":
+        if float(self.callerSelf.ui.setTime.value()) >= 0. and float(self.callerSelf.ui.setTime.value()) != -1.:
             measurementTime = float(self.callerSelf.ui.setTime.text())
         else:
             measurementTime = -1
-            self.callerSelf.ui.setTime.setText("-1")
+            self.callerSelf.ui.setTime.setValue(-1.)
 
         self.startSignal.emit()
 
@@ -1038,16 +1057,20 @@ class singleReadWorker(QObject, QRunnable):
         self.endSignal.emit()
 
 
-class ForceSensorGUI():
-    def __init__(self, ui, WarningOn: bool = False, **kwargs) -> None:
+class ForceSensorGUI(QObject, QRunnable):
+    errorSignal = Signal()
+
+    def __init__(self, ui) -> None:
+        super().__init__()
+        self.ui = ui
+
+    def __call__(self, **kwargs) -> None:
         """
         Opens up the serial port, checks the gauge value and makes sure data is available.
 
         (PySerial library has to be installed on the computer)
         """
         ####### SOME PARAMETERS AND STUFF ######
-
-        self.ui = ui
         self.GaugeValue: float = float(self.ui.setGaugeValue.value())
         self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.value())
 
@@ -1074,8 +1097,6 @@ class ForceSensorGUI():
                                  baudrate=self.baudrate,
                                  timeout=self.timeout
                                  )
-        if self.GaugeValue == 0.:
-            self.reGauge()
 
     def reGauge(self):
         """
@@ -1141,12 +1162,16 @@ class ForceSensorGUI():
         #     sleep(self.stdDelay)
         returnLine = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
+            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
         else:
             try:
                 return float(returnLine.split(": ")[-1])
-            except ValueError as e:
-                return e
+            except Exception as e:
+                self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
+                self.errorSignal.emit()
+                return 0.
+
         
     def ST(self) -> None:
         """
@@ -1160,10 +1185,12 @@ class ForceSensorGUI():
         #     sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
         if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
-            raise RuntimeError(returnLine)
+            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
+            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
 
     def SP(self, position: int) -> None:
         """
@@ -1181,7 +1208,8 @@ class ForceSensorGUI():
         #     sleep(self.stdDelay)
         returnLine = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
+            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
 
     def SV(self, velocity: int) -> None:
         """
@@ -1199,7 +1227,8 @@ class ForceSensorGUI():
         #     sleep(self.stdDelay)
         returnLine = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
 
     def HM(self) -> None:
         """
@@ -1210,11 +1239,12 @@ class ForceSensorGUI():
         """
         self.ser.flush()
         self.ser.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
 
 
 class ErrorInterface(QtWidgets.QDialog):
