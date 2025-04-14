@@ -89,9 +89,16 @@ class Logging():
         if not self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
 
-        # Write data
-        for d, F in zip(data[0], data[1]):
-            self.HAND.write(str(round(d, 8))+","+str(round(F, 8))+"\n")
+        # Write data, variable length of `data`
+        for indexData in range(len(data[0])):
+            line: str = str()
+            lineValues: list[int|float] = []
+
+            for indexUnit in range(len(data)):
+                lineValues.append(str(data[indexUnit][indexData]))
+            line = ",".join(lineValues) + "\n"
+            self.HAND.write(line)
+
         # Close file
         if not self.NeverCloseFile:
             self.HAND.close()
@@ -107,11 +114,12 @@ class Logging():
         else:
             file = open(filename, "r")
 
-        data = [[], []]
+        data = [[], [], []]
         for line in file:
-            t, F = line.strip().split(",")
+            t, s, F = line.strip().split(",")
             data[0].append(float(t))
-            data[1].append(float(F))
+            data[1].append(float(s))
+            data[2].append(float(F))
 
         file.close()
         return data
