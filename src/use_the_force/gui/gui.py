@@ -1249,6 +1249,30 @@ class ForceSensorGUI(QObject, QRunnable):
             self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
 
+    def GP(self) -> int:
+        """
+        ### Get Position
+        Current position set in memory.
+
+        :return: End position if moving, else current position in [mm]
+        :rtype: int
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}GP{self.cmdEnd}".encode())
+        # if self.stdDelay > 0:
+        #     sleep(self.stdDelay)
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
+        else:
+            try:
+                return int(returnLine.split(": ")[-1])
+            except Exception as e:
+                    self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
+                    self.errorSignal.emit()
+                    return 0.
+
 
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
