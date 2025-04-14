@@ -86,10 +86,12 @@ class UserInterface(QtWidgets.QMainWindow):
         self.switchDirectionMDMToggle: bool = False
         self.MDMActive: bool = False
         self.singleReadToggle: bool = False
+        self.homed: bool = False
         self.singleReadForce: float = float()
         self.singleReadForces: int = 10
         self.singleReadSkips: int = 10
         self.stepSizeMDM: float = 0.05
+        self.velocity = int(self.ui.setVelocity.value())
         self.txtLogMDM: str = str()
         self.reMDMMatch = re.compile(r"\[[A-Za-z0-9]+\]")
         self.data = [[], [], []]
@@ -132,6 +134,10 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # TODO: add screen for movement options and movement cycles.
         self.ui.setVelocity.setValue(60) # 1mm/s
+        self.ui.timeLabel.setVisible(False) # REMOVE
+        self.ui.setTime.setVisible(False) # REMOVE
+        self.ui.timeLabel.setEnabled(False) 
+        self.ui.setTime.setEnabled(False) 
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -384,7 +390,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setChecked(False)
         self.ui.setNewtonPerCount.setEnabled(False)
         self.ui.setGaugeValue.setEnabled(False)
-        del self.sensor
+        self.homed = False
 
     @Slot(str, str, str)
     @Slot(str, str, None)
@@ -574,7 +580,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setText("Tare")
         self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
-        if not self.MDMActive:
+        if (not self.MDMActive) and self.homed:
             self.ui.butRecord.setEnabled(True)
         self.ui.butReGauge.setChecked(False)
         self.ui.butSingleRead.setEnabled(True)
@@ -663,7 +669,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSingleRead.setText(
                 "{:.5f}".format(self.singleReadForce))
             self.ui.butSingleRead.setEnabled(True)
-            self.ui.butRecord.setEnabled(True)
+            if self.homed:
+                self.ui.butRecord.setEnabled(True)
             self.singleReadToggle = False
 
         self.ui.butReGauge.setEnabled(True)
@@ -763,7 +770,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.logOptions.setEnabled(True)
             self.ui.graphOptions.setEnabled(True)
             self.ui.butClear.setEnabled(True)
-            if self.butConnectToggle:
+            if self.butConnectToggle and self.homed:
                 self.ui.butRecord.setEnabled(True)
 
             # MDM
@@ -951,15 +958,20 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.SP(self.ui.setPosition.value())
     
     def butUpdateVelocity(self) -> None:
-        self.sensor.SV(self.ui.setVelocity.value())
+        self.velocity = int(self.ui.setVelocity.value())
+        self.sensor.SV(self.velocity)
 
     def butHome(self) -> None:
         self.butUpdateVelocity()
         self.sensor.HM()
+        self.homed = True
+        self.ui.butRecord.setEnabled(True)
         self.ui.butMove.setEnabled(True)
 
     def butForceStop(self) -> None:
         self.sensor.ST()
+        self.homed = False
+        self.ui.butRecord.setEnabled(False)
         self.ui.butHome.setEnabled(True)
         self.ui.butMove.setEnabled(False)
 
@@ -979,12 +991,20 @@ class mainLogWorker(QObject, QRunnable):
             self.callerSelf.data = self.callerSelf.measurementLog.readLog(
                 filename=self.callerSelf.filePath)
 
-        # a time of `-1` will be seen as infinit and function will keep reading
-        if float(self.callerSelf.ui.setTime.value()) >= 0. and float(self.callerSelf.ui.setTime.value()) != -1.:
-            measurementTime = float(self.callerSelf.ui.setTime.text())
-        else:
-            measurementTime = -1
-            self.callerSelf.ui.setTime.setValue(-1.)
+        # mm/s speed of stage
+        trueVelocity = (5*self.callerSelf.velocity)/300
+
+        currentPos = self.callerSelf.sensor.GP()
+        startPos = self.callerSelf.ui.setStartPos.value()
+        endPos = self.callerSelf.ui.setEndPos.value()
+
+        travelTime = abs(endPos-startPos)/trueVelocity
+        measurementTime = travelTime
+
+        if currentPos != startPos:
+            self.callerSelf.sensor.SP(startPos)
+            # wait until the stage has reached the start position
+            sleep(abs(startPos - currentPos) * trueVelocity+0.5)
 
         self.startSignal.emit()
 
