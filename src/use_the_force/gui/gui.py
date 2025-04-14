@@ -92,7 +92,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.stepSizeMDM: float = 0.05
         self.txtLogMDM: str = str()
         self.reMDMMatch = re.compile(r"\[[A-Za-z0-9]+\]")
-        self.data = [[], []]
+        self.data = [[], [], []]
         self.ui.errorMessage = []
 
         ###################
@@ -148,8 +148,8 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         Plots the data on the central plot.
 
-        :param data: list containing both x-axes and y-axes as `[x,y]`
-        :type data: list[list, list]
+        :param data: list containing both x-axes and y-axes as `[...,x,y]`. `...` is ignored
+        :type data: list[..., list, list]
 
         :param label1loc: location of first label, default: `"left"`
         :type label1loc: str
@@ -175,7 +175,7 @@ class UserInterface(QtWidgets.QMainWindow):
         pg.setConfigOption("background", kwargs.pop("clrBg", "w"))
         # self.ui.graphMDM.setBackground(background=kwargs.pop("clrBg", "w"))
         self.ui.graph1.plot(
-            *self.data,
+            *self.data[-2:],
             symbol=kwargs.pop("symbol", None),
             pen={
                 "color": kwargs.pop("color", "r"),
@@ -209,29 +209,29 @@ class UserInterface(QtWidgets.QMainWindow):
         Updates the plot
         """
         self.ui.graph1.plot(
-            *self.data,
+            *self.data[-2:],
         )
 
-        if len(self.data[0]) > 0:
-            self.ui.xLimSlider.setMinimum(-1*(int(self.data[0][-1])+1))
+        if len(self.data[-2]) > 0:
+            self.ui.xLimSlider.setMinimum(-1*(int(self.data[-2][-1])+1))
             try:
                 self.xLim = float(self.ui.xLimSet.text())
-                if -1*self.xLim < self.data[0][-1] and (self.xLim != float(0)):
+                if -1*self.xLim < self.data[-2][-1] and (self.xLim != float(0)):
                     self.ui.graph1.setXRange(
-                        self.data[0][-1]+self.xLim, self.data[0][-1])
+                        self.data[-2][-1]+self.xLim, self.data[-2][-1])
                     i = bisect.bisect_left(
-                        self.data[0], self.data[0][-1]+self.xLim)
+                        self.data[-2], self.data[-2][-1]+self.xLim)
                     self.ui.graph1.setYRange(
-                        min(self.data[1][i:]), max(self.data[1][i:]))
+                        min(self.data[-1][i:]), max(self.data[-1][i:]))
 
                 elif self.xLim == float(0):
-                    self.ui.graph1.setXRange(0, self.data[0][-1])
+                    self.ui.graph1.setXRange(0, self.data[-2][-1])
                     self.ui.graph1.setYRange(
-                        min(self.data[1]), max(self.data[1]))
+                        min(self.data[-1]), max(self.data[-1]))
 
             except:
-                self.ui.graph1.setXRange(0, self.data[0][-1])
-                self.ui.graph1.setYRange(min(self.data[1]), max(self.data[1]))
+                self.ui.graph1.setXRange(0, self.data[-2][-1])
+                self.ui.graph1.setYRange(min(self.data[-1]), max(self.data[-1]))
 
     def updatePlotLabel(self, graph, labelLoc: str, labelTxt: str) -> None:
         """
@@ -318,7 +318,8 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.error(
                         ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()])])
                 else:
-                    self.error(["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!"])
+                    self.ui.errorMessage = ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!"]
+                    self.error()
                 self.ui.butConnect.setText("Connect")
                 self.ui.butConnect.setEnabled(True)
             del devices
@@ -338,7 +339,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butConnect.setEnabled(True)
             return
         # needs time or it will break
-        # something to do with the M5Stick probably
         sleep(0.5)
         if self.sensor.SR() == 0.:
             self.sensor.ClosePort()
@@ -352,7 +352,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setChecked(True)
         self.ui.setPortName.setEnabled(False)
         if not self.MDMActive:
-            self.ui.butRecord.setEnabled(True)
             if not self.fileOpen:
                 self.butClear()
             self.ui.butFile.setEnabled(True)
@@ -436,7 +435,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butFileGraphImport.setEnabled(False)
                 self.ui.butFileGraphImport.setText(
                     f"Close File: {''.join(*self.filePath.split('/')[-1].split('.')[:-1])}")
-                if len(self.data[0]) > 0:
+                if len(self.data[1]) > 0:
                     self.ui.butSave.setEnabled(False)
                     self.thread_pool.start(self.saveToLog.run)
                 self.ui.butSwitchManual.setEnabled(False)
@@ -461,8 +460,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butFileGraphImport.setText("-")
             self.ui.butFile.setText("-")
             self.ui.butFile.setEnabled(True)
-            if hasattr(self, "sensor"):
-                self.ui.butRecord.setEnabled(True)
             self.ui.butClear.setEnabled(True)
             self.butClear()
             self.ui.butSwitchManual.setEnabled(True)
@@ -520,6 +517,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butFileGraphImport.setEnabled(False)
             self.ui.butSwitchManual.setEnabled(False)
             self.sensor.ser.reset_input_buffer()
+            self.butClear()
             if self.ui.butFile.text() != "-":
                 self.mainLogWorker.logLess = False
                 self.thread_pool.start(self.mainLogWorker.run)
@@ -533,7 +531,7 @@ class UserInterface(QtWidgets.QMainWindow):
         button that clears data in `self.data` and resets graph
         """
         del self.data
-        self.data = [[], []]
+        self.data = [[], [], []]
         if self.MDMActive:
             self.graphMDM1.clear()
             self.graphMDM2.clear()
@@ -602,7 +600,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.thread_pool.start(self.saveToLog.run)
 
     def saveStart(self) -> None:
-        self.ui.butSave.setText(f"Saving {len(self.data)}")
+        self.ui.butSave.setText(f"Saving...")
 
     def saveEnd(self) -> None:
         self.ui.butSave.setText("Save")
@@ -627,36 +625,38 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.singleReadToggle = False
             else:
                 if self.readForceMDMToggle:
-                    self.data[0].append(round(self.data[0][-1]+self.stepSizeMDM, len(str(self.stepSizeMDM).split(".")[-1])))
-                    self.data[1].append(self.singleReadForce)
+                    self.data[0].append(0)
+                    self.data[1].append(round(self.data[1][-1]+self.stepSizeMDM, len(str(self.stepSizeMDM).split(".")[-1])))
+                    self.data[2].append(self.singleReadForce)
 
                     if re.search(self.reMDMMatch, self.ui.xLabel_2.text()) and  re.search(self.reMDMMatch, self.ui.yLabel_2.text()):
                         xUnit = self.ui.xLabel_2.text().split("[")[1].split("]")
                         yUnit = self.ui.yLabel_2.text().split("[")[1].split("]")
                         if len(xUnit) > 0 and len(yUnit) > 0:
-                            self.txtLogMDM = self.txtLogMDM + f"\n{self.data[0][-1]} {xUnit[0]}, {self.data[1][-1]} {yUnit[0]}"
+                            self.txtLogMDM = self.txtLogMDM + f"\n{self.data[1][-1]} {xUnit[0]}, {self.data[2][-1]} {yUnit[0]}"
                     else:
-                        self.txtLogMDM = self.txtLogMDM + f"\n{self.data[0][-1]}, {self.data[1][-1]}"
+                        self.txtLogMDM = self.txtLogMDM + f"\n{self.data[1][-1]}, {self.data[2][-1]}"
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
                     self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
                     self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
                 else:
-                    self.data[0].append(0.)
-                    self.data[1].append(self.singleReadForce)
+                    self.data[0].append(0)
+                    self.data[1].append(0.)
+                    self.data[2].append(self.singleReadForce)
                     self.readForceMDMToggle = True
                     if re.search(self.reMDMMatch, self.ui.xLabel_2.text()) and  re.search(self.reMDMMatch, self.ui.yLabel_2.text()):
                         xUnit = self.ui.xLabel_2.text().split("[")[1].split("]")
                         yUnit = self.ui.yLabel_2.text().split("[")[1].split("]")
                         if len(xUnit) > 0 and len(yUnit) > 0:
-                            self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]} {xUnit[0]}, {self.data[1][-1]} {yUnit[0]}"
+                            self.txtLogMDM = self.txtLogMDM + f"{self.data[1][-1]} {xUnit[0]}, {self.data[2][-1]} {yUnit[0]}"
                     else:
-                        self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]}, {self.data[1][-1]}"
+                        self.txtLogMDM = self.txtLogMDM + f"{self.data[1][-1]}, {self.data[2][-1]}"
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
                     self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
                     self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
                 self.ui.butSwitchDirectionMDM.setEnabled(True)
 
-                self.measurementLog.writeLog([self.data[0][-1],self.data[1][-1]])
+                self.measurementLog.writeLog([self.data[0][-1], self.data[1][-1],self.data[2][-1]])
                 self.updatePlotMDM()
                 self.ui.butDeletePreviousMDM.setEnabled(True)
         else:
@@ -725,17 +725,17 @@ class UserInterface(QtWidgets.QMainWindow):
             self.measurementLog.createLogGUI()
 
             self.stepSizeMDM = -1*self.stepSizeMDM
-            if len(self.data[0]) > 0:
-                self.switchForce: float = self.data[1][-1]
-                self.switchDistance: float = self.data[0][-1]
+            if len(self.data[1]) > 0:
+                self.switchDistance: float = self.data[1][-1]
+                self.switchForce: float = self.data[2][-1]
                 del self.data
             else:
                 self.switchDistance = 0.
                 self.switchForce = 0.
 
-            self.data = [[self.switchDistance], [self.switchForce]]
+            self.data = [[0], [self.switchDistance], [self.switchForce]]
 
-            self.measurementLog.writeLog([self.data[0][-1],self.data[1][-1]])
+            self.measurementLog.writeLog([self.data[0][-1]],[self.data[1][-1],self.data[2][-1]])
 
             self.readForceMDMToggle = True
             del self.txtLogMDM
@@ -744,9 +744,9 @@ class UserInterface(QtWidgets.QMainWindow):
                 xUnit = self.ui.xLabel_2.text().split("[")[1].split("]")
                 yUnit = self.ui.yLabel_2.text().split("[")[1].split("]")
                 if len(xUnit) > 0 and len(yUnit) > 0:
-                    self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]} {xUnit[0]}, {self.data[1][-1]} {yUnit[0]}"
+                    self.txtLogMDM = self.txtLogMDM + f"{self.data[1][-1]} {xUnit[0]}, {self.data[2][-1]} {yUnit[0]}"
             else:
-                self.txtLogMDM = self.txtLogMDM + f"{self.data[0][-1]}, {self.data[1][-1]}"
+                self.txtLogMDM = self.txtLogMDM + f"{self.data[1][-1]}, {self.data[2][-1]}"
             self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
             self.plainTextEditScrollbar = self.ui.plainTextEdit.verticalScrollBar()
             self.plainTextEditScrollbar.setValue(self.plainTextEditScrollbar.maximum())
@@ -791,7 +791,7 @@ class UserInterface(QtWidgets.QMainWindow):
         pg.setConfigOption("background", kwargs.pop("clrBg", "w"))
         # self.ui.graphMDM.setBackground(background=kwargs.pop("clrBg", "w"))
         self.graphMDM1 = self.ui.graphMDM.plot(
-            *self.data,
+            *self.data[1:],
             name=kwargs.pop("nameIn","Approach"),
             symbol=kwargs.pop("symbolIn", None),
             pen=pg.mkPen({
@@ -800,7 +800,7 @@ class UserInterface(QtWidgets.QMainWindow):
             })
         )
         self.graphMDM2 = self.ui.graphMDM.plot(
-            *self.data,
+            *self.data[1:],
             name=kwargs.pop("nameOut","Retraction"),
             symbol=kwargs.pop("symbolOut", None),
             pen=pg.mkPen({
@@ -839,9 +839,9 @@ class UserInterface(QtWidgets.QMainWindow):
 
     def updatePlotMDM(self) -> None:
         if self.switchDirectionMDMToggle:
-            self.graphMDM2.setData(*self.data)
+            self.graphMDM2.setData(*self.data[1:])
         else:
-            self.graphMDM1.setData(*self.data)
+            self.graphMDM1.setData(*self.data[1:])
 
     def butFileMDM(self) -> None:
         """
@@ -896,12 +896,12 @@ class UserInterface(QtWidgets.QMainWindow):
         main use for when MDM hits other side in capillary bridge experiment, or when the capillary bridge gets broken without being noticed
         """
         # data changes
-        self.data[0], self.data[1] = self.data[0][:-1], self.data[1][:-1]
+        self.data[0], self.data[1], self.data[2] = self.data[0][:-1], self.data[1][:-1], self.data[2][:-1]
 
-        if len(self.data[0]) <= 1 and self.switchDirectionMDMToggle:
+        if len(self.data[1]) <= 1 and self.switchDirectionMDMToggle:
             self.ui.butDeletePreviousMDM.setEnabled(False)
             self.ui.butSwitchDirectionMDM.setEnabled(False)
-        elif len(self.data[0]) <= 0:
+        elif len(self.data[1]) <= 0:
             self.readForceMDMToggle = False
             self.ui.butDeletePreviousMDM.setEnabled(False)
             self.ui.butSwitchDirectionMDM.setEnabled(False)
@@ -988,23 +988,24 @@ class mainLogWorker(QObject, QRunnable):
 
         self.startSignal.emit()
 
-        if len(self.callerSelf.data[0]) == 0:
-            time: float = 0.
-            self.callerSelf.sensor.T0 = perf_counter_ns()
-        else:
-            time: float = self.callerSelf.data[0][-1]
-            self.callerSelf.sensor.T0 = perf_counter_ns() - int(time*1e9+0.5)
-        while (time < measurementTime or measurementTime == -1) and self.callerSelf.recording:
+        time: float = 0.
+        self.callerSelf.sensor.T0 = perf_counter_ns()
+
+        # start movement
+        self.callerSelf.sensor.SP(endPos)
+        
+        while (time < measurementTime) and self.callerSelf.recording:
             try:
+                time = round((perf_counter_ns() - self.callerSelf.sensor.T0)/1e9,8)
+                Position = trueVelocity*time
                 Force = self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
-                time = perf_counter_ns() - self.callerSelf.sensor.T0
-                time = round(time/1e9, 8)
                 self.callerSelf.data[0].append(time)
-                self.callerSelf.data[1].append(Force)
+                self.callerSelf.data[1].append(Position)
+                self.callerSelf.data[2].append(Force)
 
                 if not self.logLess:
-                    # logs: t[s], F[mN]
-                    self.callerSelf.measurementLog.writeLog([time, Force])
+                    # logs: t[s], s[m], F[mN]
+                    self.callerSelf.measurementLog.writeLog([time, Position, Force])
 
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
