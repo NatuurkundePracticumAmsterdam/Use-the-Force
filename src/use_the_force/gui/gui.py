@@ -138,6 +138,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setTime.setVisible(False) # REMOVE
         self.ui.timeLabel.setEnabled(False) 
         self.ui.setTime.setEnabled(False) 
+        self.ui.setLineSkipsMDM.setValue(3)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -499,16 +500,18 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         start button, disables/ enables most buttons and starts/ joins threads for the logging
         """
-        if self.recording:
+        if self.recording and self.threadReachedEnd:
             self.recording = False
             self.ui.butRecord.setText("Start")
-            self.ui.butRecord.setChecked(True)
             self.ui.butClear.setEnabled(True)
             self.ui.butFile.setEnabled(True)
             self.ui.butReGauge.setEnabled(True)
             self.ui.butSave.setEnabled(True)
             self.ui.butSingleRead.setEnabled(True)
             self.ui.butSwitchManual.setEnabled(True)
+            
+        elif self.recording: 
+            self.butForceStop()
 
         else:
             self.recording = True
@@ -543,7 +546,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.graphMDM2.clear()
         else:
             self.ui.graph1.clear()
-        if hasattr(self, "sensor"):
+        if hasattr(self.sensor, "ser"):
             self.sensor.ser.reset_input_buffer()
         self.ui.butSave.setEnabled(False)
         if not self.fileOpen:
@@ -569,6 +572,7 @@ class UserInterface(QtWidgets.QMainWindow):
         the actual Tare script
         """
         self.ui.butReGauge.setChecked(True)
+        
         self.ui.butReGauge.setText("Taring in 3")
         sleep(1)
         self.ui.butReGauge.setText("Taring in 2")
@@ -578,6 +582,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butReGauge.setText("...")
         self.sensor.reGauge()
         self.ui.butReGauge.setText("Tare")
+
         self.ui.butReGauge.setEnabled(True)
         self.ui.butConnect.setEnabled(True)
         if (not self.MDMActive) and self.homed:
@@ -593,7 +598,7 @@ class UserInterface(QtWidgets.QMainWindow):
         - `if isChecked():` do nothing as it is already saved
         - `else:` open new file and write data
         """
-        if self.ui.butFile.isChecked():
+        if self.fileOpen:
             # When a file is selected it will already
             # write to the file when it reads a line
             self.ui.butSave.setEnabled(False)
@@ -610,7 +615,6 @@ class UserInterface(QtWidgets.QMainWindow):
 
     def saveEnd(self) -> None:
         self.ui.butSave.setText("Save")
-        self.butFile()
 
     def butSingleRead(self) -> None:
         self.singleReadToggle = True
@@ -636,10 +640,12 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.data[2].append(self.singleReadForce)
 
                     if re.search(self.reMDMMatch, self.ui.xLabel_2.text()) and  re.search(self.reMDMMatch, self.ui.yLabel_2.text()):
-                        xUnit = self.ui.xLabel_2.text().split("[")[1].split("]")
-                        yUnit = self.ui.yLabel_2.text().split("[")[1].split("]")
+                        xUnit = self.ui.xLabel_2.text().split("[")[-1].split("]")
+                        yUnit = self.ui.yLabel_2.text().split("[")[-1].split("]")
                         if len(xUnit) > 0 and len(yUnit) > 0:
                             self.txtLogMDM = self.txtLogMDM + f"\n{self.data[1][-1]} {xUnit[0]}, {self.data[2][-1]} {yUnit[0]}"
+                        else:
+                            self.txtLogMDM = self.txtLogMDM + f"\n{self.data[1][-1]}, {self.data[2][-1]}"
                     else:
                         self.txtLogMDM = self.txtLogMDM + f"\n{self.data[1][-1]}, {self.data[2][-1]}"
                     self.ui.plainTextEdit.setPlainText(self.txtLogMDM)
@@ -969,11 +975,21 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butMove.setEnabled(True)
 
     def butForceStop(self) -> None:
-        self.sensor.ST()
         self.homed = False
         self.ui.butRecord.setEnabled(False)
         self.ui.butHome.setEnabled(True)
         self.ui.butMove.setEnabled(False)
+        if self.recording:
+            self.recording = False
+            self.ui.butRecord.setText("Start")
+            self.ui.butClear.setEnabled(True)
+            self.ui.butFile.setEnabled(True)
+            self.ui.butReGauge.setEnabled(True)
+            self.ui.butSave.setEnabled(True)
+            self.ui.butSingleRead.setEnabled(True)
+            self.ui.butSwitchManual.setEnabled(True)
+
+        self.sensor.ST()
 
 
 class mainLogWorker(QObject, QRunnable):
@@ -1210,8 +1226,7 @@ class ForceSensorGUI(QObject, QRunnable):
         if not(returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1]==" movement aborted, home to unlock"):
             self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
+        elif returnLine.split(":")[0] == "[ERROR]":
             self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
 
