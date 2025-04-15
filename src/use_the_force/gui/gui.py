@@ -120,8 +120,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.mainLogWorker.endSignal.connect(self.stopPlotTimer)
 
         self.saveToLog = saveToLog(self)
-        self.saveToLog.startSignal.connect(self.startPlotTimer)
-        self.saveToLog.endSignal.connect(self.stopPlotTimer)
+        self.saveToLog.startSignal.connect(self.saveStart)
+        self.saveToLog.endSignal.connect(self.saveEnd)
 
         self.singleReadWorker = singleReadWorker(self)
         # self.singleReadWorker.startSignal.connect()
