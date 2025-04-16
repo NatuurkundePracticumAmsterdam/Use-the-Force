@@ -136,15 +136,14 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.timeLabel.setEnabled(False)
         self.ui.setTime.setEnabled(False)
         self.ui.setLineSkipsMDM.setValue(3)
-        print(type(self.ui.setTime))
 
-    def enableElement(self, *elements) -> None:
+    def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
         Enables the specified GUI elements.
         """
         [element.setEnabled(True) for element in elements]
 
-    def disableElement(self, *elements) -> None:
+    def disableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
         Disables the specified GUI elements.
         """
@@ -870,7 +869,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.enableElement(self.ui.butRecord)
 
             # MDM
-            self.disableElement(self.ui.MDM.setEnabled)
+            self.disableElement(self.ui.MDM)
 
         else:
             self.MDMActive = True
