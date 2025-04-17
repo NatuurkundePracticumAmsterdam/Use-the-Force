@@ -620,9 +620,11 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         self.ui.butReGauge.setChecked(True)
 
-        for i in range(3):
-            self.ui.butReGauge.setText(f"Taring in {i+1}")
+        i=3
+        while i > 0:
+            self.ui.butReGauge.setText(f"Taring in {i}")
             sleep(1)
+            i -= 1
 
         self.ui.butReGauge.setText("...")
         self.sensor.reGauge()
