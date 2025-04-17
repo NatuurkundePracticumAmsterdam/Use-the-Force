@@ -432,6 +432,24 @@ class UserInterface(QtWidgets.QMainWindow):
         :param errorText: text why the error occured
         :type errorText: str
         """
+        if self.ui.errorMessage[2] == " movement aborted, home to unlock":
+            if self.recording:
+                self.recording = False
+                self.ui.butRecord.setText("Start")
+                self.enableElement(
+                    self.ui.butClear,
+                    self.ui.butFile,
+                    self.ui.butSave,
+                    self.ui.butSwitchManual
+                )
+            self.homed = False
+            self.enableElement(self.ui.butHome)
+            self.disableElement(
+                self.ui.butRecord,
+                self.ui.butMove
+            )
+            
+
         self.error_ui = ErrorInterface(*self.ui.errorMessage)
         self.error_ui.show()
 
