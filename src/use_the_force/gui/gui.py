@@ -476,11 +476,9 @@ class UserInterface(QtWidgets.QMainWindow):
         else:
             self.fileOpen = True
             self.ui.butFile.setChecked(True)
-            # if hasattr(self, 'filePath'):
-            #     if self.filePath != "":
-            #         self.oldFilepath = self.filePath
             self.filePath, _ = QtWidgets.QFileDialog.getSaveFileName(
                 filter="CSV files (*.csv)")
+            # Cancel gives a 0 length string
             if self.filePath != "":
                 self.measurementLog = Logging(self.filePath)
                 self.measurementLog.createLogGUI()
@@ -676,7 +674,6 @@ class UserInterface(QtWidgets.QMainWindow):
             # Cancelling file selecting gives a 0 length string
             if self.filePath != "":
                 self.disableElement(self.ui.butSave)
-                self.thread_pool.start(self.saveToLog.run)
 
     def saveStart(self) -> None:
         self.ui.butSave.setText("Saving...")
