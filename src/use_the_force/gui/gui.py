@@ -377,8 +377,8 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.startsensorConnect.start()
             else:
                 if len(devices) > 0:
-                    self.error(
-                        ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()])])
+                    self.ui.errorMessage = ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()])]
+                    self.error()
                 else:
                     self.ui.errorMessage = [
                         "Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\nNo ports found!"]
