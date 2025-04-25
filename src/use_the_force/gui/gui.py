@@ -556,7 +556,7 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         start button, disables/ enables most buttons and starts/ joins threads for the logging
         """
-        if self.recording and self.threadReachedEnd:
+        if self.recording:
             self.recording = False
             self.ui.butRecord.setText("Start")
             self.enableElement(
