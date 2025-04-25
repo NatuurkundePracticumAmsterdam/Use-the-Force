@@ -568,8 +568,8 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butSwitchManual
             )
 
-        elif self.recording:
-            self.butForceStop()
+            if not self.threadReachedEnd:
+                pass # one day will have be able to wait for motor to stop.
 
         else:
             self.recording = True
