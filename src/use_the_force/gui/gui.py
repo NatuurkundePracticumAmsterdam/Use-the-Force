@@ -1272,9 +1272,10 @@ class ForceSensorGUI(QObject, QRunnable):
             self.ser = serial.Serial(self.PortName,
                                      baudrate=self.baudrate,
                                      timeout=self.timeout,
-                                     rtscts=False,
                                      dsrdtr=False
                                     )
+            self.ser.setRTS(False)
+            self.ser.setDTR(False)
         except Exception as e:
             self.failed = True
             self.ui.errorMessage = [
@@ -1292,6 +1293,7 @@ class ForceSensorGUI(QObject, QRunnable):
                               for i in range(self.gaugeLines)]
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
         self.ui.setGaugeValue.setValue(self.GaugeValue)
+        self.TR()
 
     def GetReading(self) -> list[int | float]:
         """
@@ -1355,6 +1357,14 @@ class ForceSensorGUI(QObject, QRunnable):
                 self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
                 self.errorSignal.emit()
                 return 2_147_483_647 # int32 max value
+    
+    def TR(self) -> None:
+        self.ser.reset_input_buffer()
+        self.ser.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
 
     def ST(self) -> None:
         """
