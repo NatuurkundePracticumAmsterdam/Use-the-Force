@@ -403,7 +403,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # needs time or it will break
         sleep(0.5)
-        if self.sensor.SR() == 0.:
+        if self.sensor.SR() == 2_147_483_647:
             self.sensor.ClosePort()
             self.resetConnectUI()
             return
@@ -1271,8 +1271,10 @@ class ForceSensorGUI(QObject, QRunnable):
         try:
             self.ser = serial.Serial(self.PortName,
                                      baudrate=self.baudrate,
-                                     timeout=self.timeout
-                                     )
+                                     timeout=self.timeout,
+                                     rtscts=False,
+                                     dsrdtr=False
+                                    )
         except Exception as e:
             self.failed = True
             self.ui.errorMessage = [
@@ -1345,14 +1347,14 @@ class ForceSensorGUI(QObject, QRunnable):
         if returnLine.split(":")[0] == "[ERROR]":
             self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
-            return 0.
+            return 2_147_483_647 # int32 max value
         else:
             try:
                 return float(returnLine.split(": ")[-1])
             except Exception as e:
                 self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
                 self.errorSignal.emit()
-                return 0.
+                return 2_147_483_647 # int32 max value
 
     def ST(self) -> None:
         """
@@ -1436,14 +1438,14 @@ class ForceSensorGUI(QObject, QRunnable):
         if returnLine.split(":")[0] == "[ERROR]":
             self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
-            return 0
+            return 2_147_483_647 # int32 max value
         else:
             try:
                 return int(returnLine.split(": ")[-1])
             except Exception as e:
                 self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
                 self.errorSignal.emit()
-                return 0
+                return 2_147_483_647 # int32 max value
 
 
 class ErrorInterface(QtWidgets.QDialog):
