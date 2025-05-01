@@ -48,8 +48,10 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butUpdateVelocity.pressed.connect(self.butUpdateVelocity)
         self.ui.butHome.pressed.connect(self.butHome)
         self.ui.butForceStop.pressed.connect(self.butForceStop)
+        self.ui.butTareDisplay.pressed.connect(self.butDisplayTare)
+        self.ui.butForceDisplay.pressed.connect(self.butDisplayForce)
 
-        # Text boxes
+        # Text boxes and value boxes
         self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
         self.ui.setPlotTimerInterval.textEdited.connect(
             self.updatePlotTimerInterval)
@@ -59,7 +61,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.singleReadSkipsUpdate)
         self.ui.setStepSizeMDM.valueChanged.connect(self.singleReadStepUpdate)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
-
+        self.ui.setUnitDisplay.editingFinished.connect(self.updateUnitDisplay)
         ###############
         # Check Ports #
         ###############
@@ -131,6 +133,10 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # TODO: add screen for movement options and movement cycles.
         # ^ Might never update this one ^
+        self.ui.setUnitDisplay.setEnabled(False)
+        self.ui.butTareDisplay.setEnabled(False)
+        self.ui.butForceDisplay.setEnabled(False)
+        self.ui.toolBox.setCurrentIndex(0)
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -161,7 +167,10 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setGaugeValue,
             self.ui.butRecord,
             self.ui.butReGauge,
-            self.ui.butSingleRead
+            self.ui.butSingleRead,
+            self.ui.setUnitDisplay,
+            self.ui.butTareDisplay,
+            self.ui.butForceDisplay
         )
 
     def setConnectedUI(self) -> None:
@@ -178,7 +187,10 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butHome,
             self.ui.butForceStop,
             self.ui.butUpdateVelocity,
-            self.ui.butConnect
+            self.ui.butConnect,
+            self.ui.setUnitDisplay,
+            self.ui.butTareDisplay,
+            self.ui.butForceDisplay
         )
         self.disableElement(self.ui.setPortName)
         if not self.MDMActive:
@@ -353,6 +365,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # Gets enabled again at the end of the thread
         self.ui.butConnect.setEnabled(False)
 
+        # Disconnect
         if self.butConnectToggle:
             self.butConnectToggle = False
 
@@ -361,6 +374,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.startsensorDisonnect.start()
             self.ui.setPortName.setEnabled(True)
 
+        # Connect
         else:
             devices: list[str] = [
                 port.device for port in list_ports.comports()]
@@ -1120,6 +1134,15 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.sensor.ST()
 
+    def butDisplayTare(self) -> None:
+        self.sensor.TR()
+
+    def butDisplayForce(self) -> None:
+        self.sensor.SF(float(self.ui.setForceApplied.value()))
+
+    def updateUnitDisplay(self) -> None:
+        if self.butConnectToggle:
+            self.sensor.UU(str(self.ui.setUnitDisplay.text()))
 
 class mainLogWorker(QObject, QRunnable):
     startSignal = Signal()
@@ -1287,7 +1310,6 @@ class ForceSensorGUI(QObject, QRunnable):
                               for i in range(self.gaugeLines)]
         self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
         self.ui.setGaugeValue.setValue(self.GaugeValue)
-        self.TR()
 
     def GetReading(self) -> list[int | float]:
         """
@@ -1353,7 +1375,12 @@ class ForceSensorGUI(QObject, QRunnable):
                 return 2_147_483_647 # int32 max value
     
     def TR(self) -> None:
-        self.ser.reset_input_buffer()
+        """
+        ### Tares display value
+
+        Only changes the converted display value (bottom one), does not change serial output.
+        """
+        self.ser.flush()
         self.ser.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
@@ -1451,6 +1478,39 @@ class ForceSensorGUI(QObject, QRunnable):
                 self.errorSignal.emit()
                 return 2_147_483_647 # int32 max value
 
+    def SF(self, load: float = 1.) -> None:
+        """
+        ### Set force slope for display
+
+        Recalculates and saves the new force slope based on current load.\\
+        Only changes the display value, not the output.
+
+        :param load: current applied load
+        :type load: float
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}SF {load}{self.cmdEnd}".encode())
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
+    
+    def UU(self, unit:str = " mN") -> None:
+        """
+        ### Set unit for display
+
+        Changes the displayed unit at the end of the display value.
+        Leading spaces are counted, no space means no space between number and unit.
+        
+        :param unit: unit to display
+        :type unit: str
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}UU{unit}{self.cmdEnd}".encode())
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
 
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
