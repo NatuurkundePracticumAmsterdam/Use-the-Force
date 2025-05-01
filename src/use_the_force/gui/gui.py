@@ -1,7 +1,7 @@
 import sys
 from time import perf_counter_ns, sleep
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot
+from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot, Qt
 from PySide6.QtGui import QCloseEvent
 import pyqtgraph as pg
 import threading
@@ -25,7 +25,8 @@ class UserInterface(QtWidgets.QMainWindow):
         # disable MDM until switched
         self.ui.MDM.setVisible(False)
         self.ui.MDM.setEnabled(False)
-        # new variable for use later
+
+        self.error_ui = ErrorInterface()
 
         ###############
         # CONNECTIONS #
@@ -208,8 +209,13 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         if self.recording:
             self.recording = False
-        if self.ui.butConnect.isChecked():
+        if self.butConnectToggle:
             self.butConnect()
+        if not self.fileOpen and len(self.data[0])>0:
+            self.ui.errorMessage = [
+                "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
+            if self.error() == 1: # 1 = Ok
+                self.butSave()
 
     def plot(self, **kwargs) -> None:
         """
@@ -432,7 +438,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot(str, str, str)
     @Slot(str, str, None)
-    def error(self) -> None:
+    def error(self) -> int:
         """
         Launches the error dialog.
 
@@ -440,6 +446,9 @@ class UserInterface(QtWidgets.QMainWindow):
         :type errorType: str
         :param errorText: text why the error occured
         :type errorText: str
+
+        :returns: Result of dialogue (button pressed), 1 for OK, 0 for Cancel
+        :rtype: int
         """
         if len(self.ui.errorMessage) == 3:
             if self.ui.errorMessage[2] == "[ERROR]: movement aborted, home to unlock":
@@ -460,8 +469,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 )
             
 
-        self.error_ui = ErrorInterface(*self.ui.errorMessage)
-        self.error_ui.show()
+        return self.error_ui(*self.ui.errorMessage)
 
     def butFile(self) -> None:
         """
@@ -581,6 +589,11 @@ class UserInterface(QtWidgets.QMainWindow):
                 pass # one day will have be able to wait for motor to stop.
 
         else:
+            if not self.fileOpen and len(self.data[0])>0:
+                self.ui.errorMessage = [
+                    "Unsaved Data", "Unsaved Data!", "You have unsaved data, are you sure you want to continue?"]
+                if self.error() == 0: # 0 = Cancel
+                    return
             self.recording = True
             self.threadReachedEnd = False
             self.ui.butRecord.setText("Stop")
@@ -677,12 +690,14 @@ class UserInterface(QtWidgets.QMainWindow):
             # When a file is selected it will already
             # write to the file when it reads a line
             self.disableElement(self.ui.butSave)
+            self.ui.toolBox.setCurrentIndex(2)
 
         else:
             self.butFile()
             # Cancelling file selecting gives a 0 length string
             if self.filePath != "":
                 self.disableElement(self.ui.butSave)
+                self.ui.toolBox.setCurrentIndex(2)
 
     def saveStart(self) -> None:
         self.ui.butSave.setText("Saving...")
@@ -1513,17 +1528,39 @@ class ForceSensorGUI(QObject, QRunnable):
             self.errorSignal.emit()
 
 class ErrorInterface(QtWidgets.QDialog):
-    def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
+    def __init__(self) -> None:
         # roep de __init__() aan van de parent class
         super().__init__()
 
         self.ui = Ui_errorWindow()
         self.ui.setupUi(self)
-        self.setWindowTitle(errorType)
+        self.ui.ErrorText.setTextFormat(Qt.TextFormat.RichText)
+
+    def __call__(self, windowTitle: str, errorText: str, additionalInfo: str | None = None) -> int:
+        """
+        Enabling the window with the different types.
+
+        :param windowTitle: sets the window title
+        :type windowTitle: str
+        :param errorText: sets the short error text in the window
+        :type errorText: str
+        :param additionalInfo: sets the additional information in the window
+        :type additionalInfo: str | None
+
+        :return: returns the value of the button pressed, 1 for OK, 0 for Cancel
+        :rtype: int
+        """
+        self.setWindowTitle(windowTitle)
         if additionalInfo is not None:
-            self.ui.ErrorText.setText(f"{errorText}\n\n{additionalInfo}")
+            self.ui.ErrorText.setText(f"""
+<b>{errorText}</b><br>
+<br>
+{additionalInfo}
+""")
         else:
-            self.ui.ErrorText.setText(errorText)
+            self.ui.ErrorText.setText(f"<b>{errorText}</b>")
+        
+        return self.exec()
 
 
 def start() -> None:
