@@ -53,9 +53,9 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
         self.ui.setPlotTimerInterval.textEdited.connect(
             self.updatePlotTimerInterval)
-        self.ui.setLineReadsMDM.valueChanged.connect(
+        self.ui.setLineReads.valueChanged.connect(
             self.singleReadLinesForcesUpdate)
-        self.ui.setLineSkipsMDM.valueChanged.connect(
+        self.ui.setLineSkips.valueChanged.connect(
             self.singleReadSkipsUpdate)
         self.ui.setStepSizeMDM.valueChanged.connect(self.singleReadStepUpdate)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
@@ -130,13 +130,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # CHANGE IN NEXT UI UPDATE #
         ############################
         # TODO: add screen for movement options and movement cycles.
-        self.ui.setVelocity.setValue(60)  # 1mm/s
-        self.ui.timeLabel.setVisible(False)  # REMOVE
-        self.ui.setTime.setVisible(False)  # REMOVE
-        self.ui.timeLabel.setEnabled(False)
-        self.ui.setTime.setEnabled(False)
-        self.ui.setLineSkipsMDM.setValue(3)
-        self.ui.setStartPos.setValue(46)
+        # ^ Might never update this one ^
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -193,14 +187,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.enableElement(self.ui.butFile)
         elif self.fileMDMOpen:
             self.enableElement(self.ui.butReadForceMDM)
-
-        #########################
-        # CHANGE FROM UI UPDATE #
-        #########################
-        self.ui.labLineReadsMDM = self.ui.labLineReads
-        self.ui.setLineReadsMDM = self.ui.setLineReads
-        self.ui.labLineSkipsMDM = self.ui.labLineSkips
-        self.ui.setLineSkipsMDM = self.ui.setLineSkips
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -781,7 +767,7 @@ class UserInterface(QtWidgets.QMainWindow):
         Changes the value of singleReadSkips when textbox is changed
         """
         try:
-            self.singleReadSkips = int(self.ui.setLineSkipsMDM.text())
+            self.singleReadSkips = int(self.ui.setLineSkips.text())
         except ValueError:
             pass
 
@@ -790,7 +776,7 @@ class UserInterface(QtWidgets.QMainWindow):
         Changes the value of singleReadForces when textbox is changed
         """
         try:
-            self.singleReadForces = int(self.ui.setLineReadsMDM.text())
+            self.singleReadForces = int(self.ui.setLineReads.text())
         except ValueError:
             pass
 
