@@ -136,6 +136,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.timeLabel.setEnabled(False)
         self.ui.setTime.setEnabled(False)
         self.ui.setLineSkipsMDM.setValue(3)
+        self.ui.setStartPos.setValue(46)
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -1154,7 +1155,7 @@ class mainLogWorker(QObject, QRunnable):
         if currentPos != startPos:
             self.callerSelf.sensor.SP(startPos)
             # wait until the stage has reached the start position
-            sleep(abs(startPos - currentPos) * trueVelocity+0.5)
+            sleep(abs(startPos - currentPos) * trueVelocity + 1)
 
         self.startSignal.emit()
 
