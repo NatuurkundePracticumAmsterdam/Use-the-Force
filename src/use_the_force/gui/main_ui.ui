@@ -72,7 +72,7 @@
        <enum>QFrame::Shape::NoFrame</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="sensorOptions">
        <property name="enabled">
@@ -227,6 +227,14 @@
        </widget>
       </widget>
       <widget class="QWidget" name="moveOptions">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>118</width>
+         <height>259</height>
+        </rect>
+       </property>
        <attribute name="label">
         <string>Movement</string>
        </attribute>
@@ -304,7 +312,7 @@
          <number>100</number>
         </property>
         <property name="value">
-         <number>100</number>
+         <number>60</number>
         </property>
        </widget>
        <widget class="QPushButton" name="butUpdateVelocity">
@@ -397,6 +405,9 @@
          <property name="maximum">
           <number>46</number>
          </property>
+         <property name="value">
+          <number>46</number>
+         </property>
         </widget>
         <widget class="QLabel" name="labEndPos">
          <property name="geometry">
@@ -442,7 +453,7 @@
         </widget>
        </widget>
       </widget>
-      <widget class="QWidget" name="logOptions">
+      <widget class="QWidget" name="measurementOptions">
        <property name="enabled">
         <bool>true</bool>
        </property>
@@ -455,7 +466,7 @@
         </rect>
        </property>
        <attribute name="label">
-        <string>Log</string>
+        <string>Measurement</string>
        </attribute>
        <widget class="QLabel" name="fileLabel">
         <property name="geometry">
@@ -485,6 +496,225 @@
         <property name="checkable">
          <bool>true</bool>
         </property>
+       </widget>
+       <widget class="QLabel" name="labLineSkips">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>41</y>
+          <width>113</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Line Skips</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="setLineSkips">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>61</y>
+          <width>113</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="value">
+         <number>3</number>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="setLineReads">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>101</y>
+          <width>113</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="value">
+         <number>10</number>
+        </property>
+       </widget>
+       <widget class="QLabel" name="labLineReads">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>81</y>
+          <width>113</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Line Reads (take avg)</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="displayOptions">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>120</y>
+          <width>113</width>
+          <height>139</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="title">
+         <string>Display Options</string>
+        </property>
+        <widget class="QLineEdit" name="setUnitDisplay">
+         <property name="geometry">
+          <rect>
+           <x>1</x>
+           <y>119</y>
+           <width>109</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="maxLength">
+          <number>8</number>
+         </property>
+         <property name="placeholderText">
+          <string> mN</string>
+         </property>
+        </widget>
+        <widget class="QDoubleSpinBox" name="setForceApplied">
+         <property name="geometry">
+          <rect>
+           <x>1</x>
+           <y>58</y>
+           <width>109</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="decimals">
+          <number>8</number>
+         </property>
+         <property name="maximum">
+          <double>999999.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>1.000000000000000</double>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="butTareDisplay">
+         <property name="geometry">
+          <rect>
+           <x>1</x>
+           <y>19</y>
+           <width>109</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Tare Display Value</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="butForceDisplay">
+         <property name="geometry">
+          <rect>
+           <x>1</x>
+           <y>78</y>
+           <width>109</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Update Conversion</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label">
+         <property name="geometry">
+          <rect>
+           <x>1</x>
+           <y>39</y>
+           <width>109</width>
+           <height>19</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>True Load Value:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_2">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>100</y>
+           <width>109</width>
+           <height>19</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Display Unit:</string>
+         </property>
+        </widget>
        </widget>
       </widget>
       <widget class="QWidget" name="graphOptions">
@@ -775,7 +1005,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Max Duration (s)</string>
+      <string>Duration (s)</string>
      </property>
     </widget>
     <widget class="QPushButton" name="butSave">
@@ -874,25 +1104,6 @@ Displacement Mode</string>
       <string>Force Stop</string>
      </property>
     </widget>
-    <widget class="QSpinBox" name="setTime">
-     <property name="geometry">
-      <rect>
-       <x>1</x>
-       <y>19</y>
-       <width>118</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="minimum">
-      <number>-1</number>
-     </property>
-     <property name="maximum">
-      <number>999999999</number>
-     </property>
-     <property name="value">
-      <number>-1</number>
-     </property>
-    </widget>
     <widget class="QPushButton" name="butReGauge">
      <property name="enabled">
       <bool>false</bool>
@@ -910,6 +1121,28 @@ Displacement Mode</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="setTime">
+     <property name="geometry">
+      <rect>
+       <x>1</x>
+       <y>19</y>
+       <width>118</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="decimals">
+      <number>6</number>
+     </property>
+     <property name="minimum">
+      <double>-1.000000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>9999999.000000000000000</double>
+     </property>
+     <property name="value">
+      <double>-1.000000000000000</double>
      </property>
     </widget>
    </widget>
@@ -1057,24 +1290,6 @@ Displacement Mode</string>
        <string>Step Size (mm)</string>
       </property>
      </widget>
-     <widget class="QLabel" name="labLineSkipsMDM">
-      <property name="geometry">
-       <rect>
-        <x>1</x>
-        <y>93</y>
-        <width>113</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Line Skips</string>
-      </property>
-     </widget>
      <widget class="QPushButton" name="butFileMDM">
       <property name="geometry">
        <rect>
@@ -1094,72 +1309,6 @@ Displacement Mode</string>
       </property>
       <property name="checkable">
        <bool>true</bool>
-      </property>
-     </widget>
-     <widget class="QLabel" name="labLineReadsMDM">
-      <property name="geometry">
-       <rect>
-        <x>1</x>
-        <y>133</y>
-        <width>113</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Line Reads (take avg)</string>
-      </property>
-     </widget>
-     <widget class="QSpinBox" name="setLineReadsMDM">
-      <property name="geometry">
-       <rect>
-        <x>1</x>
-        <y>153</y>
-        <width>113</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="minimum">
-       <number>1</number>
-      </property>
-      <property name="maximum">
-       <number>999999999</number>
-      </property>
-      <property name="value">
-       <number>10</number>
-      </property>
-     </widget>
-     <widget class="QSpinBox" name="setLineSkipsMDM">
-      <property name="geometry">
-       <rect>
-        <x>1</x>
-        <y>113</y>
-        <width>113</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="minimum">
-       <number>1</number>
-      </property>
-      <property name="maximum">
-       <number>999999999</number>
-      </property>
-      <property name="value">
-       <number>10</number>
       </property>
      </widget>
      <widget class="QDoubleSpinBox" name="setStepSizeMDM">

@@ -194,6 +194,14 @@ class UserInterface(QtWidgets.QMainWindow):
         elif self.fileMDMOpen:
             self.enableElement(self.ui.butReadForceMDM)
 
+        #########################
+        # CHANGE FROM UI UPDATE #
+        #########################
+        self.ui.labLineReadsMDM = self.ui.labLineReads
+        self.ui.setLineReadsMDM = self.ui.setLineReads
+        self.ui.labLineSkipsMDM = self.ui.labLineSkips
+        self.ui.setLineSkipsMDM = self.ui.setLineSkips
+
     def closeEvent(self, event: QCloseEvent) -> None:
         """
         Safely closes the program and ends certain threads
