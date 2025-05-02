@@ -91,6 +91,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.singleReadForces: int = 10
         self.singleReadSkips: int = 10
         self.stepSizeMDM: float = 0.05
+        self.plotIndexX = 1
+        self.plotIndexY = 2
         self.velocity = int(self.ui.setVelocity.value())
         self.txtLogMDM: str = str()
         self.reMDMMatch: re.Pattern[str] = re.compile(r"\[[A-Za-z0-9]+\]")
@@ -109,7 +111,7 @@ class UserInterface(QtWidgets.QMainWindow):
         ##################
         # MULTITHREADING #
         ##################
-        self.sensor = ForceSensorGUI(ui=self.ui)
+        self.sensor = ForceSensorGUI(caller=self)
         self.sensor.errorSignal.connect(self.error)
 
         self.plotTimer = QTimer()
@@ -118,6 +120,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.mainLogWorker = mainLogWorker(self)
         self.mainLogWorker.startSignal.connect(self.startPlotTimer)
         self.mainLogWorker.endSignal.connect(self.stopPlotTimer)
+        self.mainLogWorker.switchXAxisSignal.connect(self.switchToTime)
 
         self.saveToLog = saveToLog(self)
         self.saveToLog.startSignal.connect(self.saveStart)
@@ -138,6 +141,12 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butTareDisplay.setEnabled(False)
         self.ui.butForceDisplay.setEnabled(False)
         self.ui.toolBox.setCurrentIndex(0)
+        self.ui.setTime.setValue(0.)
+        self.ui.setTime.setMinimum(0.)
+        self.ui.setLineReads.setValue(1)
+        self.ui.setLineSkips.setValue(1)
+        self.ui.xLabel.setEnabled(False)
+        self.ui.timeLabel.setText("Extra Duration (s)")
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -265,11 +274,10 @@ class UserInterface(QtWidgets.QMainWindow):
         self.updatePlotLabel(
             graph=self.ui.graph1,
             labelLoc=kwargs.pop("label2loc", "bottom"),
-            labelTxt=kwargs.pop("label2txt", self.ui.xLabel.text())
+            labelTxt=kwargs.pop("label2txt", "Displacement [mm]")
         )
 
         self.ui.yLabel.textChanged.connect(self.updatePlotYLabel)
-        self.ui.xLabel.textChanged.connect(self.updatePlotXLabel)
 
         self.ui.xLimSlider.sliderMoved.connect(self.xLimSlider)
         self.ui.xLimSet.textChanged.connect(self.xLimSet)
@@ -282,30 +290,51 @@ class UserInterface(QtWidgets.QMainWindow):
         Updates the plot
         """
         self.ui.graph1.plot(
-            *self.data[-2:],
+            self.data[self.plotIndexX], self.data[self.plotIndexY]
         )
 
-        if len(self.data[-2]) > 0:
-            self.ui.xLimSlider.setMinimum(-1*(int(self.data[-2][-1])+1))
+        if len(self.data[self.plotIndexX]) > 0:
+            self.ui.xLimSlider.setMinimum(-1*(int(self.data[self.plotIndexX][-1])+1))
             try:
                 self.xLim = float(self.ui.xLimSet.text())
-                if -1*self.xLim < self.data[-2][-1] and (self.xLim != float(0)):
+                if -1*self.xLim < self.data[self.plotIndexX][-1] and (self.xLim != float(0)):
                     self.ui.graph1.setXRange(
-                        self.data[-2][-1]+self.xLim, self.data[-2][-1])
+                        self.data[self.plotIndexX][-1]+self.xLim, self.data[self.plotIndexX][-1])
                     i = bisect.bisect_left(
-                        self.data[-2], self.data[-2][-1]+self.xLim)
+                        self.data[self.plotIndexX], self.data[self.plotIndexX][-1]+self.xLim)
                     self.ui.graph1.setYRange(
-                        min(self.data[-1][i:]), max(self.data[-1][i:]))
+                        min(self.data[self.plotIndexY][i:]), max(self.data[self.plotIndexY][i:]))
 
                 elif self.xLim == float(0):
-                    self.ui.graph1.setXRange(0, self.data[-2][-1])
+                    self.ui.graph1.setXRange(0, self.data[self.plotIndexX][-1])
                     self.ui.graph1.setYRange(
-                        min(self.data[-1]), max(self.data[-1]))
+                        min(self.data[self.plotIndexY]), max(self.data[self.plotIndexY]))
 
             except:
-                self.ui.graph1.setXRange(0, self.data[-2][-1])
+                self.ui.graph1.setXRange(0, self.data[self.plotIndexX][-1])
                 self.ui.graph1.setYRange(
-                    min(self.data[-1]), max(self.data[-1]))
+                        min(self.data[self.plotIndexY]), max(self.data[self.plotIndexY]))
+
+    def switchPlotIndexX(self, index: int) -> None:
+        self.plotIndexX = index
+        if index == 0:
+            self.updatePlotLabel(
+                graph=self.ui.graph1, 
+                labelLoc="bottom", 
+                labelTxt="Time [s]"
+                )
+        elif index == 1:
+            self.updatePlotLabel(
+                graph=self.ui.graph1, 
+                labelLoc="bottom", 
+                labelTxt="Displacement [mm]"
+                )
+    
+    def switchPlotIndexY(self, index: int) -> None:
+        self.plotIndexY = index
+
+    def switchToTime(self) -> None:
+        self.switchPlotIndexX(0)
 
     def updatePlotLabel(self, graph, labelLoc: str, labelTxt: str) -> None:
         """
@@ -326,10 +355,6 @@ class UserInterface(QtWidgets.QMainWindow):
     def updatePlotYLabel(self) -> None:
         self.updatePlotLabel(graph=self.ui.graph1,
                              labelLoc="left", labelTxt=self.ui.yLabel.text())
-
-    def updatePlotXLabel(self) -> None:
-        self.updatePlotLabel(graph=self.ui.graph1,
-                             labelLoc="bottom", labelTxt=self.ui.xLabel.text())
 
     def updatePlotTimerInterval(self) -> None:
         tmp = self.ui.setPlotTimerInterval.text()
@@ -586,14 +611,14 @@ class UserInterface(QtWidgets.QMainWindow):
             )
 
             if not self.threadReachedEnd:
-                pass # one day will have be able to wait for motor to stop.
+                pass # one day will be able to wait for motor to stop.
 
         else:
             if not self.fileOpen and len(self.data[0])>0:
                 self.ui.errorMessage = [
-                    "Unsaved Data", "Unsaved Data!", "You have unsaved data, are you sure you want to continue?"]
-                if self.error() == 0: # 0 = Cancel
-                    return
+                    "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
+                if self.error() == 1: # 1 = Ok
+                    self.butSave()
             self.recording = True
             self.threadReachedEnd = False
             self.ui.butRecord.setText("Stop")
@@ -611,6 +636,11 @@ class UserInterface(QtWidgets.QMainWindow):
 
             self.sensor.ser.reset_input_buffer()
             self.butClear()
+
+            if self.ui.setStartPos.value() == self.ui.setEndPos.value() and self.plotIndexX!=0 and self.ui.setTime.value()>0:
+                self.switchPlotIndexX(0)
+            elif self.plotIndexX!=1:
+                self.switchPlotIndexX(1)
 
             if self.ui.butFile.text() != "-":
                 self.mainLogWorker.logLess = False
@@ -1165,6 +1195,7 @@ class mainLogWorker(QObject, QRunnable):
     startSignal = Signal()
     endSignal = Signal()
     errorSignal = Signal()
+    switchXAxisSignal = Signal()
 
     def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
@@ -1177,19 +1208,23 @@ class mainLogWorker(QObject, QRunnable):
                 filename=self.callerSelf.filePath)
 
         # mm/s speed of stage
-        trueVelocity: float = (5*self.callerSelf.velocity)/300
+        trueVelocity: float = (self.callerSelf.velocity)/60
 
         currentPos: int = self.callerSelf.sensor.GP()
         startPos: int = self.callerSelf.ui.setStartPos.value()
         endPos: int = self.callerSelf.ui.setEndPos.value()
 
         travelTime: float = abs(endPos-startPos)/trueVelocity
-        measurementTime: float = travelTime
+        measurementTime: float = travelTime + self.callerSelf.ui.setTime.value()
 
         if currentPos != startPos:
             self.callerSelf.sensor.SP(startPos)
             # wait until the stage has reached the start position
             sleep(abs(startPos - currentPos) * trueVelocity + 1)
+        singleReadForces = self.callerSelf.singleReadForces
+        
+        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
+                              for i in range(self.callerSelf.singleReadSkips)]
 
         self.startSignal.emit()
 
@@ -1203,9 +1238,17 @@ class mainLogWorker(QObject, QRunnable):
             try:
                 time = round(
                     (perf_counter_ns() - self.callerSelf.sensor.T0)/1e9, 8)
-                Position = trueVelocity*time
-                Force = self.callerSelf.sensor.ForceFix(
-                    self.callerSelf.sensor.SR())
+                if time < travelTime:
+                    Position = trueVelocity*time
+                elif self.callerSelf.plotIndexX != 0:
+                    self.switchXAxisSignal.emit()
+
+                forces: list[float] = [self.callerSelf.sensor.ForceFix(
+                    self.callerSelf.sensor.SR()) for i in range(singleReadForces)]
+                Force = round(
+                    sum(forces)/singleReadForces,
+                    ndigits=8
+                )
                 self.callerSelf.data[0].append(time)
                 self.callerSelf.data[1].append(Position)
                 self.callerSelf.data[2].append(Force)
@@ -1214,6 +1257,7 @@ class mainLogWorker(QObject, QRunnable):
                     # logs: t[s], s[m], F[mN]
                     self.callerSelf.measurementLog.writeLog(
                         [time, Position, Force])
+                singleReadForces = self.callerSelf.singleReadForces
 
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
@@ -1268,9 +1312,10 @@ class singleReadWorker(QObject, QRunnable):
 class ForceSensorGUI(QObject, QRunnable):
     errorSignal = Signal()
 
-    def __init__(self, ui: Ui_MainWindow) -> None:
+    def __init__(self, caller: UserInterface) -> None:
         super().__init__()
-        self.ui: Ui_MainWindow = ui
+        self.caller: UserInterface = caller
+        self.ui: Ui_MainWindow = caller.ui
         self.failed: bool = False
 
     def __call__(self, **kwargs) -> None:
@@ -1279,7 +1324,6 @@ class ForceSensorGUI(QObject, QRunnable):
 
         (PySerial library has to be installed on the computer)
         """
-        ####### SOME PARAMETERS AND STUFF ######
         self.GaugeValue: float = float(self.ui.setGaugeValue.value())
         self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.value())
 

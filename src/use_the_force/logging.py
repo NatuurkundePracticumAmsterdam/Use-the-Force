@@ -34,6 +34,8 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
+        
+        self.HAND.write("Time, Displacement, Force")
 
         if not self.NeverCloseFile:
             self.HAND.close()
@@ -48,6 +50,7 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
+        self.HAND.write("Time, Displacement, Force")
         self.HAND.close()
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
@@ -61,7 +64,6 @@ class Logging():
 
     ### ===LOGGING FUNCTION===###
     # Puts the values in the given list into the opened log file.
-
     def writeLog(self, data) -> None:
 
         # Open file
@@ -88,7 +90,7 @@ class Logging():
         # Open file
         if not self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
-
+        self.HAND.write("Time, Displacement, Force")
         # Write data, variable length of `data`
         for indexData in range(len(data[0])):
             line: str = str()
@@ -104,7 +106,6 @@ class Logging():
             self.HAND.close()
 
     ### ===READ LOG===###
-
     def readLog(self, *, filename: str | None = None) -> list[list[float]]:
         if filename == None:
             filename = self.filename
@@ -115,7 +116,7 @@ class Logging():
             file = open(filename, "r")
 
         data = [[], [], []]
-        for line in file:
+        for line in file[1:]:
             t, s, F = line.strip().split(",")
             data[0].append(float(t))
             data[1].append(float(s))
