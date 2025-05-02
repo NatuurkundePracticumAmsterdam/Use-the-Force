@@ -1120,13 +1120,15 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.SV(self.velocity)
 
     def butHome(self) -> None:
-        self.butUpdateVelocity()
-        self.sensor.HM()
-        self.homed = True
-        self.enableElement(
-            self.ui.butRecord,
-            self.ui.butMove
-        )
+        self.ui.errorMessage = ["Home Warning", "Home Warning", "Make sure nothing is obstructing the path downwards.<br>The motor will not stop during homing!"]
+        if self.error()==1:
+            self.butUpdateVelocity()
+            self.sensor.HM()
+            self.homed = True
+            self.enableElement(
+                self.ui.butRecord,
+                self.ui.butMove
+            )
 
     def butForceStop(self) -> None:
         self.homed = False
