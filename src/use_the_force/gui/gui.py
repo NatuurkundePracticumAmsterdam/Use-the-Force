@@ -2,7 +2,7 @@ import sys
 from time import perf_counter_ns, sleep
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QTextBlockFormat, QResizeEvent
 import pyqtgraph as pg
 import threading
 import bisect
@@ -28,14 +28,17 @@ class UserInterface(QtWidgets.QMainWindow):
         # new variable for use later
         self.ui.error = self.error # type: ignore
 
-        ###############
-        # CONNECTIONS #
-        ###############
-        # Buttons
-        ###############
-        # CONNECTIONS #
-        ###############
-        # Buttons
+        #########################
+        # CHANGE FROM UI UPDATE #
+        #########################
+        self.ui.labLineReadsMDM = self.ui.labLineReads
+        self.ui.setLineReadsMDM = self.ui.setLineReads
+        self.ui.labLineSkipsMDM = self.ui.labLineSkips
+        self.ui.setLineSkipsMDM = self.ui.setLineSkips
+
+        ###########
+        # BUTTONS #
+        ###########
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
         self.ui.butReGauge.pressed.connect(self.butTare)
@@ -127,14 +130,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # CHANGE IN NEXT UI UPDATE #
         ############################
         # TODO: add screen for movement options and movement cycles.
-
-        #########################
-        # CHANGE FROM UI UPDATE #
-        #########################
-        self.ui.labLineReadsMDM = self.ui.labLineReads
-        self.ui.setLineReadsMDM = self.ui.setLineReads
-        self.ui.labLineSkipsMDM = self.ui.labLineSkips
-        self.ui.setLineSkipsMDM = self.ui.setLineSkips
+        self.error("title", "text1", "And a really long text down here<br>with<br>some<br>new<br>lines<br><br><br><br><br><br><br>and more<br>:D")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -1216,17 +1212,30 @@ class ForceSensorGUI():
             raise RuntimeError(returnLine)
 
 class ErrorInterface(QtWidgets.QDialog):
-    def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None) -> None:
+    def __init__(self, errorType: str, errorText: str, additionalInfo: str | None = None, lineHeight=QTextBlockFormat.LineHeightTypes.SingleHeight) -> None:
         # roep de __init__() aan van de parent class
         super().__init__()
 
         self.ui = Ui_errorWindow()
         self.ui.setupUi(self)
         self.setWindowTitle(errorType)
+
+        self.ui.ErrorText.setWordWrap(True)
+
         if additionalInfo is not None:
-            self.ui.ErrorText.setText(f"{errorText}\n\n{additionalInfo}")
+            self.ui.ErrorText.setText(f"<b>{errorText}</b><br><br>{additionalInfo}")
         else:
-            self.ui.ErrorText.setText(errorText)
+            self.ui.ErrorText.setText(f"<b>{errorText}</b>")
+        self.ui.verticalLayout.addStretch()
+        
+    def Resize(self) -> None:
+        self.ui.ErrorText.resize()
+        height = self.ui.ErrorText.geometry().height()+self.ui.ErrorButtons.geometry().height()
+        print(self.ui.ErrorText.geometry().height())
+        self.ui.verticalLayoutWidget.setMinimumHeight(height)
+        self.setMinimumHeight(height)
+        print(height)
+        self.updateGeometry()
 
 
 def start() -> None:

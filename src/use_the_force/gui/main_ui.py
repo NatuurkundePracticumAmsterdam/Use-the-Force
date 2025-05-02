@@ -90,7 +90,7 @@ class Ui_MainWindow(object):
         self.toolBox.addItem(self.sensorOptions, u"Sensor")
         self.moveOptions = QWidget()
         self.moveOptions.setObjectName(u"moveOptions")
-        self.moveOptions.setGeometry(QRect(0, 0, 118, 259))
+        self.moveOptions.setGeometry(QRect(0, 0, 98, 28))
         self.labVelocity = QLabel(self.moveOptions)
         self.labVelocity.setObjectName(u"labVelocity")
         self.labVelocity.setGeometry(QRect(1, 21, 113, 20))
@@ -221,7 +221,7 @@ class Ui_MainWindow(object):
         self.graphOptions = QWidget()
         self.graphOptions.setObjectName(u"graphOptions")
         self.graphOptions.setEnabled(True)
-        self.graphOptions.setGeometry(QRect(0, 0, 118, 259))
+        self.graphOptions.setGeometry(QRect(0, 0, 98, 28))
         self.xLabel = QLineEdit(self.graphOptions)
         self.xLabel.setObjectName(u"xLabel")
         self.xLabel.setGeometry(QRect(1, 99, 113, 20))
@@ -443,7 +443,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.toolBox.setCurrentIndex(2)
+        self.toolBox.setCurrentIndex(0)
         self.butConnect.setDefault(False)
 
 
