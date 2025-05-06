@@ -2,7 +2,7 @@ import sys
 from time import perf_counter_ns, sleep
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot, Qt
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QTextBlockFormat, QResizeEvent
 import pyqtgraph as pg
 import threading
 import bisect
@@ -28,10 +28,17 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.error_ui = ErrorInterface()
 
-        ###############
-        # CONNECTIONS #
-        ###############
-        # Buttons
+        #########################
+        # CHANGE FROM UI UPDATE #
+        #########################
+        self.ui.labLineReadsMDM = self.ui.labLineReads
+        self.ui.setLineReadsMDM = self.ui.setLineReads
+        self.ui.labLineSkipsMDM = self.ui.labLineSkips
+        self.ui.setLineSkipsMDM = self.ui.setLineSkips
+
+        ###########
+        # BUTTONS #
+        ###########
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
         self.ui.butReGauge.pressed.connect(self.butTare)
