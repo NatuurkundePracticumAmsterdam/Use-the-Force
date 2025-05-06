@@ -35,7 +35,7 @@ class Logging():
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
         
-        self.HAND.write("Time, Displacement, Force\n")
+        self.HAND.write("Time,Displacement,Force\n")
 
         if not self.NeverCloseFile:
             self.HAND.close()
@@ -50,7 +50,7 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
-        self.HAND.write("Time, Displacement, Force\n")
+        self.HAND.write("Time,Displacement,Force\n")
         self.HAND.close()
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
