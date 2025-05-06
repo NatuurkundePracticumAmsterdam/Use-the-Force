@@ -1216,7 +1216,7 @@ class mainLogWorker(QObject, QRunnable):
 
         travelTime: float = abs(endPos-startPos)/trueVelocity
         measurementTime: float = travelTime + self.callerSelf.ui.setTime.value()
-
+        allowTimeSwitch = self.callerSelf.ui.setTime.value() != 0.
         if currentPos != startPos:
             self.callerSelf.sensor.SP(startPos)
             # wait until the stage has reached the start position
@@ -1240,7 +1240,7 @@ class mainLogWorker(QObject, QRunnable):
                     (perf_counter_ns() - self.callerSelf.sensor.T0)/1e9, 8)
                 if time < travelTime:
                     Position = trueVelocity*time
-                elif self.callerSelf.plotIndexX != 0:
+                elif self.callerSelf.plotIndexX != 0 and allowTimeSwitch:
                     self.switchXAxisSignal.emit()
 
                 forces: list[float] = [self.callerSelf.sensor.ForceFix(
