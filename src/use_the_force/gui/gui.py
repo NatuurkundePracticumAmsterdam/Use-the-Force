@@ -128,14 +128,12 @@ class UserInterface(QtWidgets.QMainWindow):
         self.mainLogWorker.startSignal.connect(self.startPlotTimer)
         self.mainLogWorker.endSignal.connect(self.stopPlotTimer)
         self.mainLogWorker.switchXAxisSignal.connect(self.switchToTime)
+        # self.mainLogWorker.singleReadStartSignal.connect()
+        self.mainLogWorker.singleReadEndSignal.connect(self.singleReadEnd)
 
         self.saveToLog = saveToLog(self)
         self.saveToLog.startSignal.connect(self.saveStart)
         self.saveToLog.endSignal.connect(self.saveEnd)
-
-        self.singleReadWorker = singleReadWorker(self)
-        # self.singleReadWorker.startSignal.connect()
-        self.singleReadWorker.endSignal.connect(self.singleReadEnd)
 
         self.thread_pool = QThreadPool.globalInstance()
 
@@ -614,7 +612,9 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butReGauge,
                 self.ui.butSave,
                 self.ui.butSingleRead,
-                self.ui.butSwitchManual
+                self.ui.butSwitchManual,
+                self.ui.butUpdateVelocity,
+                self.ui.butHome
             )
 
             if not self.threadReachedEnd:
@@ -638,7 +638,9 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butSave,
                 self.ui.butSingleRead,
                 self.ui.butFileGraphImport,
-                self.ui.butSwitchManual
+                self.ui.butSwitchManual,
+                self.ui.butUpdateVelocity,
+                self.ui.butHome
             )
 
             self.sensor.ser.reset_input_buffer()
@@ -750,7 +752,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butConnect,
             self.ui.butReGauge
         )
-        self.thread_pool.start(self.singleReadWorker.run)
+        self.thread_pool.start(self.mainLogWorker.singleRead)
 
     def singleReadEnd(self) -> None:
         if self.MDMActive:
@@ -862,7 +864,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butReadForceMDM,
             self.ui.butSwitchDirectionMDM
         )
-        self.thread_pool.start(self.singleReadWorker.run)
+        self.thread_pool.start(self.mainLogWorker.singleRead)
 
     def switchDirectionMDM(self) -> None:
         self.measurementLog.closeFile()
@@ -940,7 +942,6 @@ class UserInterface(QtWidgets.QMainWindow):
 
             # main ui buttons
             self.enableElement(
-                self.ui.logOptions,
                 self.ui.graphOptions,
                 self.ui.butClear
             )
@@ -959,7 +960,6 @@ class UserInterface(QtWidgets.QMainWindow):
 
             # main ui buttons
             self.disableElement(
-                self.ui.logOptions,
                 self.ui.graphOptions,
                 self.ui.butSave,
                 self.ui.butClear,
@@ -1203,11 +1203,16 @@ class mainLogWorker(QObject, QRunnable):
     endSignal = Signal()
     errorSignal = Signal()
     switchXAxisSignal = Signal()
+    singleReadStartSignal = Signal()
+    singleReadEndSignal = Signal()
 
     def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
         self.callerSelf: UserInterface = callerSelf
-        self.logLess = bool()
+        self.logLess:bool = bool()
+        self.single:bool = bool(False)
+        self.Force = float()
+        self.singleReadForces: int = self.callerSelf.singleReadForces
 
     def run(self) -> None:
         if not self.logLess:
@@ -1228,14 +1233,13 @@ class mainLogWorker(QObject, QRunnable):
             self.callerSelf.sensor.SP(startPos)
             # wait until the stage has reached the start position
             sleep(abs(startPos - currentPos) * trueVelocity + 1)
-        singleReadForces = self.callerSelf.singleReadForces
+        self.singleReadForces = self.callerSelf.singleReadForces
         
-        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
+        _skip: list[float] = [self.callerSelf.sensor.SR()
                               for i in range(self.callerSelf.singleReadSkips)]
 
         self.startSignal.emit()
-
-        time: float = 0.
+        time = float(0.)
         self.callerSelf.sensor.T0 = perf_counter_ns()
 
         # start movement
@@ -1249,22 +1253,16 @@ class mainLogWorker(QObject, QRunnable):
                     Position = trueVelocity*time
                 elif self.callerSelf.plotIndexX != 0 and allowTimeSwitch:
                     self.switchXAxisSignal.emit()
-
-                forces: list[float] = [self.callerSelf.sensor.ForceFix(
-                    self.callerSelf.sensor.SR()) for i in range(singleReadForces)]
-                Force = round(
-                    sum(forces)/singleReadForces,
-                    ndigits=8
-                )
+                Force = self.read()
                 self.callerSelf.data[0].append(time)
                 self.callerSelf.data[1].append(Position)
                 self.callerSelf.data[2].append(Force)
-
                 if not self.logLess:
                     # logs: t[s], s[m], F[mN]
                     self.callerSelf.measurementLog.writeLog(
-                        [time, Position, Force])
-                singleReadForces = self.callerSelf.singleReadForces
+                        [time, Position, self.Force])
+                
+                self.singleReadForces = self.callerSelf.singleReadForces
 
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
@@ -1279,6 +1277,24 @@ class mainLogWorker(QObject, QRunnable):
         if self.logLess:
             # self.callerSelf.unsavedData = self.callerSelf.data
             self.callerSelf.enableElement(self.callerSelf.ui.butSave)
+    
+    def read(self) -> float:
+        forces: list[float] = [self.callerSelf.sensor.ForceFix(
+            self.callerSelf.sensor.SR()) for i in range(self.singleReadForces)]
+        Force = round(
+            sum(forces)/self.singleReadForces,
+            ndigits=8
+        )
+        return Force
+
+
+    def singleRead(self) -> None:
+        self.singleReadStartSignal.emit()
+        self.singleReadForces = self.callerSelf.singleReadForces
+        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
+                            for i in range(self.callerSelf.singleReadSkips)]
+        self.callerSelf.singleReadForce = self.read()
+        self.singleReadEndSignal.emit()
 
 
 class saveToLog(QObject, QRunnable):
@@ -1292,27 +1308,6 @@ class saveToLog(QObject, QRunnable):
     def run(self) -> None:
         self.startSignal.emit()
         self.callerSelf.measurementLog.writeLogFull(self.callerSelf.data)
-        self.endSignal.emit()
-
-
-class singleReadWorker(QObject, QRunnable):
-    startSignal = Signal()
-    endSignal = Signal()
-
-    def __init__(self, callerSelf: UserInterface) -> None:
-        super().__init__()
-        self.callerSelf: UserInterface = callerSelf
-
-    def run(self) -> None:
-        self.startSignal.emit()
-        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
-                              for i in range(self.callerSelf.singleReadSkips)]
-        forces: list[float] = [self.callerSelf.sensor.ForceFix(
-            self.callerSelf.sensor.SR()) for i in range(self.callerSelf.singleReadForces)]
-        self.callerSelf.singleReadForce = round(
-            sum(forces)/self.callerSelf.singleReadForces,
-            ndigits=8
-        )
         self.endSignal.emit()
 
 
@@ -1337,7 +1332,7 @@ class ForceSensorGUI(QObject, QRunnable):
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
 
         self.baudrate: int = kwargs.pop('baudrate', 115200)
-        self.timeout: float = kwargs.pop('timeout', 5.)
+        self.timeout: float = kwargs.pop('timeout', 10.)
 
         self.gaugeRound: int = kwargs.pop("gaugeLines", 6)
         self.gaugeLines: int = kwargs.pop("gaugeLines", 10)
@@ -1427,20 +1422,18 @@ class ForceSensorGUI(QObject, QRunnable):
         """
         self.ser.reset_input_buffer()
         self.ser.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
-        # if self.stdDelay > 0:
-        #     sleep(self.stdDelay)
         returnLine = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
-            return 2_147_483_647 # int32 max value
+            return 0
         else:
             try:
                 return float(returnLine.split(": ")[-1])
             except Exception as e:
                 self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
                 self.errorSignal.emit()
-                return 2_147_483_647 # int32 max value
+                return 0
     
     def TR(self) -> None:
         """
@@ -1463,8 +1456,6 @@ class ForceSensorGUI(QObject, QRunnable):
         """
         self.ser.flush()
         self.ser.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
-        # if self.stdDelay > 0:
-        #     sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
         if not (returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1] == " movement aborted, home to unlock"):
             self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
@@ -1526,25 +1517,26 @@ class ForceSensorGUI(QObject, QRunnable):
         ### Get Position
         Current position set in memory.
 
+        Warning: the motor only gives out the position set in memory. 
+        If the motor is moving, this will correspond to the end position instead of the current position.
+
         :return: End position if moving, else current position in [mm]
         :rtype: int
         """
         self.ser.flush()
         self.ser.write(f"{self.cmdStart}GP{self.cmdEnd}".encode())
-        # if self.stdDelay > 0:
-        #     sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
-            return 2_147_483_647 # int32 max value
+            return 0
         else:
             try:
                 return int(returnLine.split(": ")[-1])
             except Exception as e:
                 self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
                 self.errorSignal.emit()
-                return 2_147_483_647 # int32 max value
+                return 0
 
     def SF(self, load: float = 1.) -> None:
         """
