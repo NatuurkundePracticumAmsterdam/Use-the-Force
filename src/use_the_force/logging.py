@@ -34,6 +34,8 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
+        
+        self.HAND.write("Time,Displacement,Force\n")
 
         if not self.NeverCloseFile:
             self.HAND.close()
@@ -48,6 +50,7 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
+        self.HAND.write("Time,Displacement,Force\n")
         self.HAND.close()
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
@@ -61,7 +64,6 @@ class Logging():
 
     ### ===LOGGING FUNCTION===###
     # Puts the values in the given list into the opened log file.
-
     def writeLog(self, data) -> None:
 
         # Open file
@@ -88,16 +90,21 @@ class Logging():
         # Open file
         if not self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
+        # Write data, variable length of `data`
+        for indexData in range(len(data[0])):
+            line: str = str()
+            lineValues: list[int|float] = []
 
-        # Write data
-        for d, F in zip(data[0], data[1]):
-            self.HAND.write(str(round(d, 8))+","+str(round(F, 8))+"\n")
+            for indexUnit in range(len(data)):
+                lineValues.append(str(data[indexUnit][indexData]))
+            line = ",".join(lineValues) + "\n"
+            self.HAND.write(line)
+
         # Close file
         if not self.NeverCloseFile:
             self.HAND.close()
 
     ### ===READ LOG===###
-
     def readLog(self, *, filename: str | None = None) -> list[list[float]]:
         if filename == None:
             filename = self.filename
@@ -107,11 +114,12 @@ class Logging():
         else:
             file = open(filename, "r")
 
-        data = [[], []]
-        for line in file:
-            t, F = line.strip().split(",")
+        data = [[], [], []]
+        for line in file[1:]:
+            t, s, F = line.strip().split(",")
             data[0].append(float(t))
-            data[1].append(float(F))
+            data[1].append(float(s))
+            data[2].append(float(F))
 
         file.close()
         return data
