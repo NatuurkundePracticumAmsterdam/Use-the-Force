@@ -225,7 +225,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.recording = False
         if self.butConnectToggle:
             self.butConnect()
-        if not self.fileOpen and len(self.data[0])>0:
+        if not (self.fileOpen or self.MDMActive) and len(self.data[0])>0:
             self.ui.errorMessage = [
                 "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
             if self.error() == 1: # 1 = Ok
@@ -1225,6 +1225,7 @@ class mainLogWorker(QObject, QRunnable):
         currentPos: int = self.callerSelf.sensor.GP()
         startPos: int = self.callerSelf.ui.setStartPos.value()
         endPos: int = self.callerSelf.ui.setEndPos.value()
+        Position: float = 0.
 
         travelTime: float = abs(endPos-startPos)/trueVelocity
         measurementTime: float = travelTime + self.callerSelf.ui.setTime.value()
@@ -1252,7 +1253,8 @@ class mainLogWorker(QObject, QRunnable):
                 if time < travelTime:
                     Position = trueVelocity*time
                 elif self.callerSelf.plotIndexX != 0 and allowTimeSwitch:
-                    self.switchXAxisSignal.emit()
+                        Position = float(abs(endPos-startPos))
+                        self.switchXAxisSignal.emit()
                 Force = self.read()
                 self.callerSelf.data[0].append(time)
                 self.callerSelf.data[1].append(Position)
