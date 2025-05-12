@@ -45,7 +45,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butRecord.pressed.connect(self.butRecord)
         self.ui.butClear.pressed.connect(self.butClear)
         self.ui.butSave.pressed.connect(self.butSave)
-        self.ui.butFileGraphImport.pressed.connect(self.butFileGraph)
         self.ui.butSingleRead.pressed.connect(self.butSingleRead)
         self.ui.butSwitchManual.pressed.connect(self.butSwitchMDM)
         self.ui.butFileMDM.pressed.connect(self.butFileMDM)
@@ -57,7 +56,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butHome.pressed.connect(self.butHome)
         self.ui.butForceStop.pressed.connect(self.butForceStop)
         self.ui.butTareDisplay.pressed.connect(self.butDisplayTare)
-        self.ui.butForceDisplay.pressed.connect(self.butDisplayForce)
+        self.ui.butSwapPositions.pressed.connect(self.swapPositions)
 
         # Text boxes and value boxes
         self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
@@ -70,6 +69,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setStepSizeMDM.valueChanged.connect(self.singleReadStepUpdate)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
         self.ui.setUnitDisplay.editingFinished.connect(self.updateUnitDisplay)
+        self.ui.setForceApplied.editingFinished.connect(self.butDisplayForce)
         ###############
         # Check Ports #
         ###############
@@ -142,16 +142,6 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # TODO: add screen for movement options and movement cycles.
         # ^ Might never update this one ^
-        self.ui.setUnitDisplay.setEnabled(False)
-        self.ui.butTareDisplay.setEnabled(False)
-        self.ui.butForceDisplay.setEnabled(False)
-        self.ui.toolBox.setCurrentIndex(0)
-        self.ui.setTime.setValue(0.)
-        self.ui.setTime.setMinimum(0.)
-        self.ui.setLineReads.setValue(1)
-        self.ui.setLineSkips.setValue(1)
-        self.ui.xLabel.setEnabled(False)
-        self.ui.timeLabel.setText("Extra Duration (s)")
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -516,8 +506,6 @@ class UserInterface(QtWidgets.QMainWindow):
             del self.measurementLog
             self.ui.butFile.setText("-")
             self.butClear()
-            self.ui.butFileGraphImport.setEnabled(True)
-            self.ui.butFileGraphImport.setText("-")
             self.ui.butSwitchManual.setEnabled(True)
 
         else:
@@ -531,9 +519,6 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.measurementLog.createLogGUI()
                 self.ui.butFile.setText(
                     *self.filePath.split("/")[-1].split(".")[:-1])
-                self.ui.butFileGraphImport.setEnabled(False)
-                self.ui.butFileGraphImport.setText(
-                    f"Close File: {''.join(*self.filePath.split('/')[-1].split('.')[:-1])}")
                 if len(self.data[1]) > 0:
                     self.ui.butSave.setEnabled(False)
                     self.thread_pool.start(self.saveToLog.run)
@@ -542,62 +527,6 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.fileOpen = False
                 self.ui.butFile.setText("-")
                 self.ui.butFile.setChecked(False)
-
-    def butFileGraph(self) -> None:
-        """
-        Function for what `butFileGraphImport` has to do.
-
-        What to do is based on if the button is in the `isChecked()` state. 
-        - `if isChecked():` close file and clear plot
-        - `else:` opens dialog box to select a .csv file
-        """
-        if self.fileGraphOpen:
-            self.fileGraphOpen = False
-
-            self.measurementLog.closeFile()
-            del self.measurementLog
-
-            self.ui.butFileGraphImport.setChecked(True)
-            self.ui.butFileGraphImport.setText("-")
-            self.ui.butFile.setText("-")
-            self.butClear()
-
-            self.enableElement(
-                self.ui.butFile,
-                self.ui.butClear,
-                self.ui.butSwitchManual
-            )
-
-        else:
-            self.fileGraphOpen = True
-
-            self.disableElement(self.ui.butSwitchManual)
-
-            self.filePathGraph, _ = QtWidgets.QFileDialog.getOpenFileName(
-                filter="CSV files (*.csv)")
-
-            if self.filePathGraph != "":
-                self.measurementLog = Logging(self.filePathGraph)
-                self.ui.butFileGraphImport.setChecked(True)
-                self.ui.butFileGraphImport.setText(
-                    *self.filePathGraph.split("/")[-1].split(".")[:-1])
-                self.ui.butFile.setText(
-                    f"Close File: {''.join(*self.filePathGraph.split('/')[-1].split('.')[:-1])}")
-
-                self.disableElement(
-                    self.ui.butFile,
-                    self.ui.butRecord,
-                    self.ui.butClear
-                )
-
-                self.data = self.measurementLog.readLog()
-                self.updatePlot()
-
-            else:
-                self.fileGraphOpen = False
-                del self.filePathGraph
-                self.ui.butFileGraphImport.setText("-")
-                self.ui.butFileGraphImport.setChecked(False)
 
     def butRecord(self) -> None:
         """
@@ -637,7 +566,6 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butReGauge,
                 self.ui.butSave,
                 self.ui.butSingleRead,
-                self.ui.butFileGraphImport,
                 self.ui.butSwitchManual,
                 self.ui.butUpdateVelocity,
                 self.ui.butHome
@@ -672,9 +600,7 @@ class UserInterface(QtWidgets.QMainWindow):
         if hasattr(self.sensor, "ser"):
             self.sensor.ser.reset_input_buffer()
         self.ui.butSave.setEnabled(False)
-        if not self.fileOpen:
-            self.ui.butFileGraphImport.setEnabled(True)
-        else:
+        if self.fileOpen:
             self.butFile()
 
     def butTare(self) -> None:
@@ -1197,6 +1123,13 @@ class UserInterface(QtWidgets.QMainWindow):
     def updateUnitDisplay(self) -> None:
         if self.butConnectToggle:
             self.sensor.UU(str(self.ui.setUnitDisplay.text()))
+
+    def swapPositions(self) -> None:
+        startPos = self.ui.setStartPos.value()
+        endPos = self.ui.setEndPos.value()
+        self.ui.setStartPos.setValue(endPos)
+        self.ui.setEndPos.setValue(startPos)
+
 
 class mainLogWorker(QObject, QRunnable):
     startSignal = Signal()
