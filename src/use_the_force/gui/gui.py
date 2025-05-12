@@ -1258,7 +1258,7 @@ class mainLogWorker(QObject, QRunnable):
                 self.callerSelf.data[1].append(Position)
                 self.callerSelf.data[2].append(Force)
                 if not self.logLess:
-                    # logs: t[s], s[m], F[mN]
+                    # logs: t[s], s[mm], F[mN]
                     self.callerSelf.measurementLog.writeLog(
                         [time, Position, self.Force])
                 

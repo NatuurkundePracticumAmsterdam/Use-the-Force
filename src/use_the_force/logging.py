@@ -14,7 +14,7 @@ class Logging():
         self.NeverCloseFile: bool = NeverCloseFile
         self.extension: str = extension
 
-    def createLog(self, ext='.csv') -> None:
+    def createLog(self, ext: str = '.csv') -> None:
         """
         Creates a new file for logging.
         """
@@ -40,7 +40,7 @@ class Logging():
         if not self.NeverCloseFile:
             self.HAND.close()
 
-    def createLogGUI(self, ext='.csv') -> None:
+    def createLogGUI(self) -> None:
         """
         Creates a new file for logging, GUI variant.
         """
@@ -55,7 +55,7 @@ class Logging():
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
 
-    def replaceFile(self, data):
+    def replaceFile(self, data: list[float|int]):
         self.HAND = open(self.full_filename, "w+t")
         self.NeverCloseFile = True
         self.writeLogFull(data=data)
@@ -64,7 +64,7 @@ class Logging():
 
     ### ===LOGGING FUNCTION===###
     # Puts the values in the given list into the opened log file.
-    def writeLog(self, data) -> None:
+    def writeLog(self, data: list[float|int]) -> None:
 
         # Open file
         if not self.NeverCloseFile:
@@ -85,7 +85,7 @@ class Logging():
         if not self.NeverCloseFile:
             self.HAND.close()
 
-    def writeLogFull(self, data) -> None:
+    def writeLogFull(self, data: list[float|int]) -> None:
 
         # Open file
         if not self.NeverCloseFile:
