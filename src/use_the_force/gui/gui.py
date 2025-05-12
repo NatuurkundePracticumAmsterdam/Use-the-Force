@@ -175,7 +175,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSingleRead,
             self.ui.setUnitDisplay,
             self.ui.butTareDisplay,
-            self.ui.butForceDisplay
+            self.ui.setForceApplied
         )
 
     def setConnectedUI(self) -> None:
@@ -195,7 +195,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butConnect,
             self.ui.setUnitDisplay,
             self.ui.butTareDisplay,
-            self.ui.butForceDisplay
+            self.ui.setForceApplied
         )
         self.disableElement(self.ui.setPortName)
         if not self.MDMActive:
@@ -437,11 +437,19 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # needs time or it will break
         sleep(0.5)
-        if self.sensor.SR() == 2_147_483_647:
+        if self.sensor.SR() == 0:
             self.sensor.ClosePort()
             self.resetConnectUI()
             return
 
+        pos = self.sensor.GP()
+        if pos<47 and pos>=0:
+            self.homed = True
+            self.enableElement(
+                self.ui.butRecord,
+                self.ui.butMove
+            )
+        
         self.setConnectedUI()
 
     def sensorDisconnect(self) -> None:
