@@ -89,24 +89,111 @@ class ForceSensor():
         """
         self.ser.close()
 
-    def SP(self, position: int) -> None:
-        """
-        ### Set Position
-        Sets the position of the steppermotor stage in milimeters.
+class Commands():
+    def __init__(self, serialConnection: serial.Serial, **kwargs) -> None:
+        """Class containing all available commands.
 
-        :param position: position to set from bottom [mm]
-        :type position: int
+        Args:
+            serialConnection (serial.Serial): serial connection to sensor
+            stdDelay (float): standard delay between sending a message and reading
         """
-        if position <= self.maxPos and position >= self.minPos:
-            self.ser.flush()
-            self.ser.write(f"{self.cmdStart}SP {position}{self.cmdEnd}".encode())
-            if self.stdDelay > 0:
-                sleep(self.stdDelay)
-            returnLine: str = self.ser.read_until().decode().strip()
-            if returnLine.split(":")[0] == "[ERROR]":
-                raise RuntimeError(returnLine)
-        else:
-            raise ValueError(f"Position {position} is out of range ({self.minPos}, {self.maxPos})")
+        self.serialConnection: serial.Serial = serialConnection
+        self.stdDelay: float = float(kwargs.pop("stdDelay", 0.))
+
+        self.cmdStart: str = "#"
+        self.cmdArgSep: str = ","
+        self.cmdEnd: str = ";"
+
+        self.minPos: int = 1
+        self.maxPos: int = 46
+    
+    def __call__(self, serialConnection: serial.Serial) -> None:
+        """Change serial connection
+
+        Args:
+            serialConnection (serial.Serial): new serial connection
+        """
+        self.serialConnection = serialConnection
+
+    def customCmd(self, cmd: str, *args) -> str:
+        """Custom command
+
+        Args:
+            cmd (str): command to send
+            args (tuple): additional arguments for the command
+
+        Returns:
+            str: return line
+        """
+        self.serialConnection.flush()
+        cmdStr = f"{self.cmdStart}{cmd}"
+        if len(args) != 0:
+            cmdStr += f"{args[0]}"
+            if len(args)-1 != 0:
+                for argument in args[1:]:
+                    cmdStr += f"{self.cmdArgSep}{argument}"
+        cmdStr += f"{self.cmdEnd}"
+        self.serialConnection.write(cmdStr.encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        return self.serialConnection.read_until().decode().strip()
+
+    ########################
+    # 0 Arguments Commands #
+    ########################
+    def AB(self) -> None:
+        """
+        ### Abort Continous Reading
+        
+        Aborts the continous reading.
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}AB{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+    
+    def CM(self) -> None:
+        """
+        ### Count Maximum
+        
+        Sets the currently read load as the maximum amount of force that is allowed.
+        Will immediatly send out the abort message if load remains.
+        
+        This count is saved on the sensor.
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}CM{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+    
+    def CZ(self) -> None:
+        """
+        ### Count Zero
+        
+        Tares the internal value count of the sensor, which is used to check the maximum force.\\
+        Uses current load on the sensor as internal zero.
+        
+        This count is saved on the sensor. 
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}CZ{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
 
     def GP(self) -> int:
         """
@@ -115,12 +202,14 @@ class ForceSensor():
 
         :return: End position if moving, else current position in [mm]
         :rtype: int
+        
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}GP{self.cmdEnd}".encode())
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}GP{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
@@ -129,22 +218,6 @@ class ForceSensor():
             except ValueError as e:
                 return e
     
-    def SV(self, velocity: int) -> None:
-        """
-        ### Set Velocity
-        Sets the velocity of the steppermotor stage in milimeters per second.
-
-        :param velocity: velocity to set [mm/s]
-        :type velocity: int
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}SV {velocity}{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-
     def GV(self) -> int:
         """
         ### Get Velocity
@@ -152,48 +225,68 @@ class ForceSensor():
 
         :return: End velocity if moving, else current velocity [mm/s]
         :rtype: int
+        
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}GV{self.cmdEnd}".encode())
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}GV{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
             return int(returnLine.split(": ")[-1])
-
-    def GM(self) -> str:
+    
+    def HE(self) -> ...:
         """
-        ### Get Mode
-        Returns the current selected mode, calibrated or raw.
+        ### Help
 
-        :return: string with selected mode
-        :rtype: str
+        Help command internally, not implemented here.
+        
+        :raises NotImplementedError: Not Implemented
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}GV{self.cmdEnd}".encode())
+        raise NotImplementedError
+    
+    def HM(self) -> None:
+        """
+        ### Home
+        Homes the steppermotor stage to the endstop.
+        The endstop is a physical switch that stops the motor when it is pressed.
+        Afterwards goes up to a set position inside the firmware.
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        
+    def ID(self) -> str:
+        """
+        ### Motor ID
+        
+        Returns the ID that is set for the motor stage.
+
+        :returns: Motor ID
+        :rtype: str
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}ID{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
-            return returnLine.split(" ")[-1]
-
-    def TM(self) -> None:
-        """
-        ### Toggle Mode
-        Toggles between the two modes, calibrated or raw.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}TM{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-
+            return returnLine
+        
     def SR(self) -> float:
         """
         ### Single Read
@@ -201,83 +294,96 @@ class ForceSensor():
 
         :return: read force
         :rtype: float
+        
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
             return float(returnLine.split(": ")[-1])
-
-    def CR(self, nReads: int, iReads: int) -> list[list]:
+    
+    def ST(self) -> None:
         """
-        ### Continuous Reading
-        Reads nReads times the force with an iReads interval inbetween.
-
-        :param nReads: number of lines to read
-        :type nReads: int
-        :param iReads: interval inbetween lines [ms]
-        :type iReads: int
-
-        :return: [[time], [force]]
-        :rtype: list[list[int], list[float]]
+        ### Force Stop
+        
+        Forces the motor to stop during movement.
+        Will need to home afterwards.
+        ### WARNING: DOES NOT WORK DURING HOME
+        
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(
-            f"{self.cmdStart}CR {nReads},{iReads}{self.cmdEnd}".encode())
-        sleep(self.stdDelay + iReads/1000)
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-        else:
-            time, force = returnLine.split(": ")[-1].split(";")
-            time = int(time)
-            force = float(force)
-            del self.currentReads
-            self.currentReads = [[time], [force]]
-
-            for i in range(nReads):
-                returnLine = self.ser.read_until().decode().strip()
-                if returnLine.split(":")[0] == "[ERROR]":
-                    raise RuntimeError(returnLine)
-                else:
-                    time, force = returnLine.split(": ")[-1].split(",")
-                    time = int(time)
-                    force = float(force)
-                    self.currentReads[0].append(time)
-                    self.currentReads[1].append(force)
-            return self.currentReads
-
-    def HM(self) -> None:
-        """
-        ### Home
-        Homes the steppermotor stage to the endstop.
-        The endstop is a physical switch that stops the motor when it is pressed.
-        Afterwards goes up to a set position inside the firmware.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
-
+    
     def TR(self) -> None:
         """
         ### Tare
 
         Tares the display values by setting current reading as offset.
         Does not affect readings.
+        
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+    
+    def VR(self) -> str:
+        """
+        ### Version
+        
+        Returns current running firmware version of the sensor.
+
+        :returns: Firmware Version
+        :rtype: str
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}VR{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        else:
+            return returnLine
+    
+    #######################
+    # 1 Argument Commands #
+    #######################
+    def DC(self, enable: bool = True) -> None:
+        """
+        ### Display Commands
+        
+        Enables or disables the display of commands on the sensor.
+
+        :param enable: If commands should be displayed on sensor. Default: True
+        :type enable: bool
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        if not enable:
+            self.serialConnection.write(f"{self.cmdStart}DC false{self.cmdEnd}".encode())
+        else:
+            self.serialConnection.write(f"{self.cmdStart}DC{self.cmdEnd}".encode())
+            
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
 
@@ -290,34 +396,178 @@ class ForceSensor():
 
         :param calibrationForce: current force on the loadcell
         :type calibrationForce: float
+
+        :raises RunTimeError: If sensor encounters an error.
         """
-        self.ser.flush()
-        self.ser.write(
+        self.serialConnection.flush()
+        self.serialConnection.write(
             f"{self.cmdStart}SF {calibrationForce}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
-    
-    def DC(self, enable: bool = True) -> None:
-        """
-        ### Display Commands
-        
-        Enables or disables the display of commands on the sensor.
 
-        :param enable: If commands should be displayed on sensor.
-        :type enable: bool
-        :value enable: True
-        """
 
-        self.ser.flush()
-        if not enable:
-            self.ser.write(f"{self.cmdStart}DC false{self.cmdEnd}".encode())
+    def SP(self, position: int) -> None:
+        """
+        ### Set Position
+        Sets the position of the steppermotor stage in milimeters.
+
+        :param position: position to set from bottom [mm]
+        :type position: int
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        if position <= self.maxPos and position >= self.minPos:
+            self.serialConnection.flush()
+            self.serialConnection.write(f"{self.cmdStart}SP{position}{self.cmdEnd}".encode())
+            if self.stdDelay > 0:
+                sleep(self.stdDelay)
+            returnLine: str = self.serialConnection.read_until().decode().strip()
+            if returnLine.split(":")[0] == "[ERROR]":
+                raise RuntimeError(returnLine)
         else:
-            self.ser.write(f"{self.cmdStart}DC{self.cmdEnd}".encode())
-            
-        returnLine: str = self.ser.read_until().decode().strip()
+            raise ValueError(f"Position {position} is out of range ({self.minPos}, {self.maxPos})")
+    
+    def SV(self, velocity: int) -> None:
+        """
+        ### Set Velocity
+        Sets the velocity of the steppermotor stage in milimeters per second.
+
+        :param velocity: velocity to set [mm/s]
+        :type velocity: int
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(f"{self.cmdStart}SV{velocity}{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
+            raise RuntimeError(returnLine)
+        
+    def UL(self, lineHeight: int) -> None:
+        """
+        ### Update Text Line Height
+
+        Changes the line height set in the sensor.
+
+        :param lineHeight: current force on the loadcell
+        :type lineHeight: int
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(
+            f"{self.cmdStart}UL{lineHeight}{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        
+    def UU(self, unit: str) -> None:
+        """
+        ### Update Unit Displayed
+
+        Changes the unit displayed on the interface.
+
+        :param unit: new unit, max 8 chars.
+        :type unit: str
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(
+            f"{self.cmdStart}UU{unit}{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        
+    def UX(self, xOffset: int) -> None:
+        """
+        ### Update display x offset
+
+        Updates the x offset of the display.
+
+        :param xOffset: new offset
+        :type xOffset: int
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(
+            f"{self.cmdStart}UX{xOffset}{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        
+    def UY(self, yOffset: int) -> None:
+        """
+        ### Update display y offset
+
+        Updates the y offset of the display.
+
+        :param yOffset: new offset
+        :type yOffset: int
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(
+            f"{self.cmdStart}UY{yOffset}{self.cmdEnd}".encode())
+        if self.stdDelay > 0:
+            sleep(self.stdDelay)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        
+    
+    ########################
+    # 2 Arguments Commands #
+    ########################
+    def CR(self, nReads: int, iReads: int) -> list[list]:
+        """
+        ### Continuous Reading
+        Reads nReads times the force with an iReads interval inbetween.
+
+        :param nReads: number of lines to read
+        :type nReads: int
+        :param iReads: interval inbetween lines [ms]
+        :type iReads: int
+
+        :return: [[time], [force]]
+        :rtype: list[list[int], list[float]]
+
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.write(
+            f"{self.cmdStart}CR {nReads}{self.cmdArgSep}{iReads}{self.cmdEnd}".encode())
+        sleep(self.stdDelay + iReads/1000)
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        else:
+            time, force = returnLine.split(": ")[-1].split(";")
+            time = int(time)
+            force = float(force)
+            currentReads = [[time], [force]]
+
+            for i in range(nReads):
+                returnLine = self.serialConnection.read_until().decode().strip()
+                if returnLine.split(":")[0] == "[ERROR]":
+                    raise RuntimeError(returnLine)
+                else:
+                    time, force = returnLine.split(": ")[-1].split(",")
+                    time = int(time)
+                    force = float(force)
+                    currentReads[0].append(time)
+                    currentReads[1].append(force)
+            return currentReads
