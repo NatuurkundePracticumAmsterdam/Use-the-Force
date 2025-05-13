@@ -1181,6 +1181,7 @@ class mainLogWorker(QObject, QRunnable):
                               for i in range(self.callerSelf.singleReadSkips)]
 
         self.startSignal.emit()
+        self.callerSelf.sensor.DC(False)
         time = float(0.)
         self.callerSelf.sensor.T0 = perf_counter_ns()
 
@@ -1210,7 +1211,8 @@ class mainLogWorker(QObject, QRunnable):
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
                 pass
-
+        
+        self.callerSelf.sensor.DC()
         self.endSignal.emit()
 
         if self.callerSelf.recording:
@@ -1510,6 +1512,28 @@ class ForceSensorGUI(QObject, QRunnable):
         """
         self.ser.flush()
         self.ser.write(f"{self.cmdStart}UU{unit}{self.cmdEnd}".encode())
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
+    
+    def DC(self, enable: bool = True) -> None:
+        """
+        ### Display Commands
+        
+        Enables or disables the display of commands on the sensor.
+
+        :param enable: If commands should be displayed on sensor.
+        :type enable: bool
+        :value enable: True
+        """
+
+        self.ser.flush()
+        if not enable:
+            self.ser.write(f"{self.cmdStart}DC false{self.cmdEnd}".encode())
+        else:
+            self.ser.write(f"{self.cmdStart}DC{self.cmdEnd}".encode())
+            
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]

@@ -1,12 +1,13 @@
 from time import perf_counter_ns, sleep
 import serial
 
+# TODO: add all new commands...
 
 class ForceSensor():
     def __init__(self, 
                  PortName: str = "/dev/ttyACM0", 
                  GaugeValue: int = 0, 
-                 NewtonPerVolt: float = 0.0000154, 
+                 NewtonPerVolt: float = 1., 
                  WarningOn: bool = True, 
                  MaxNewton: int | float = 5, 
                  **kwargs
@@ -20,7 +21,7 @@ class ForceSensor():
 
         # The 'zero' volt value. Determined automatically each time.
         self.GaugeValue: int = GaugeValue
-        self.NewtonPerVolt: float = NewtonPerVolt
+        self.NewtonPerCount: float = NewtonPerVolt
         # self.NewtonPerVolt = 1  # value I set for calibration
         self.WarningOn: bool = WarningOn  # >MaxNewton is dangerous for sensor.
         self.MaxNewton: int | float = MaxNewton
@@ -28,7 +29,7 @@ class ForceSensor():
         self.encoding: str = str(kwargs.pop('encoding', "UTF-8"))
 
         self.baudrate: int = int(kwargs.pop('baudrate', 115200))
-        self.timeout: float = float(kwargs.pop('timeout', 2.))
+        self.timeout: float = float(kwargs.pop('timeout', 5.))
 
         # 150/1000 # base delay of the M5Din Meter to send a response [seconds]
         self.stdDelay: float = 0.
@@ -53,54 +54,40 @@ class ForceSensor():
     def connectPort(self, PortName: str, baudrate: int = 115200, timeout: float | None = 2.) -> serial.Serial:
         return serial.Serial(port=PortName, baudrate=baudrate, timeout=timeout)
 
-    def reGauge(self):
+    def reGauge(self, reads: int = 10, skips: int = 3):
         """
         !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
+        
+        Updates the GaugeValue by taking the average of `reads` values.
+        
+        :param reads: amount of readings
+        :type reads: int
+        :param skips: initial lines to skip (and clear old values)
+        :type skips: int
         """
         self.ser.reset_input_buffer()
-        skips: list[float] = [self.GetReading()[2] for i in range(3)]
-        reads: list[float] = [self.GetReading()[2] for i in range(10)]
-        self.GaugeValue = int(sum(reads)/10)
+        skips: list[float] = [self.GetReading()[2] for i in range(skips)]
+        read_values: list[float] = [self.GetReading()[2] for i in range(reads)]
+        self.GaugeValue = int(sum(read_values)/reads)
         print("Self-gauged value: " + str(self.GaugeValue))
 
-    def GetReading(self) -> list[int | float]:
-        """
-        Reads a line of code, returns [ID, time, force]
-        """
-        # 'readline()' gives a value from the serial connection in 'bytes'
-        # 'decode()'   turns 'bytes' into a 'string'
-        # 'float()'    turns 'string' into a floating point number.
-        line: str = self.ser.readline().decode(self.encoding)
-        self.ser.reset_input_buffer()
-        ID, force = line.split(",")
-        return [int(ID), float(perf_counter_ns()-self.T0), float(force)]
+    def ForceFix(self, count: float) -> float:
+        """Corrects the units given based on GaugeValue and NewtonPerCount
 
-    def ForceFix(self, x: float) -> float:
-        """
-        Gets a single reading out of the LoadSensor.
-        """
+        Args:
+            count (float): sensor count
+
+        Returns:
+            float: calibrated units
+        """        
         # The output, with gauge, in calibrated units.
-        return (x - self.GaugeValue) * self.NewtonPerVolt * 1000
+        return (count - self.GaugeValue) * self.NewtonPerCount
 
     def ClosePort(self) -> None:
         """
         Always close after use.
         """
         self.ser.close()
-        print("LoadSensor port is closed")
-
-    def TestSensor(self, lines: int = 100) -> None:
-        """
-        Opens the port and prints some values on screen.
-        Primarily a debugging tool.
-
-        Tests if the decoding is right and should show the decoded values after the "-->"
-        """
-        for i in range(lines):
-            line = self.ser.readline()
-            decodedLine = line.decode(self.encoding, errors="replace")
-            print(line, " --> ", decodedLine)
-            print("Force: " + str(float(decodedLine.split(",")[1])) + " N")
 
     def SP(self, position: int) -> None:
         """
@@ -283,26 +270,11 @@ class ForceSensor():
         """
         ### Tare
 
-        Tares load cell values by setting current reading as offset.
+        Tares the display values by setting current reading as offset.
+        Does not affect readings.
         """
         self.ser.flush()
         self.ser.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-
-    def CL(self) -> None:
-        """
-        ### Calibrate Loading
-
-        Starts the callibration sequence by calling TR and throws away the set slope value.
-
-        ## Make sure no force is applied to the sensor when calling this function!
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}TM{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
         returnLine: str = self.ser.read_until().decode().strip()
@@ -313,13 +285,10 @@ class ForceSensor():
         """
         ### Set Force
 
-        Only to be called when the sensor is in calibration mode.
-        Since this is scaling force, units can be set in [mN] or any other prefix as well. 
-        The ouput force will correspond with the unit set.
-
+        Changes the display calibration, does not affect readings.
         Internally the force is stored as a float, so it is recommended to use a unit corresponding to the measurement range as to avoid floating point errors.
 
-        :param calibrationForce: current force on the loadcell [N]
+        :param calibrationForce: current force on the loadcell
         :type calibrationForce: float
         """
         self.ser.flush()
@@ -330,40 +299,25 @@ class ForceSensor():
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
-
-    def SC(self) -> None:
+    
+    def DC(self, enable: bool = True) -> None:
         """
-        ### Save Configuration
+        ### Display Commands
+        
+        Enables or disables the display of commands on the sensor.
 
-        Saves the current calibration settings to flash memory and uses them on boot.
+        :param enable: If commands should be displayed on sensor.
+        :type enable: bool
+        :value enable: True
         """
+
         self.ser.flush()
-        self.ser.write(f"{self.cmdStart}SC{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
+        if not enable:
+            self.ser.write(f"{self.cmdStart}DC false{self.cmdEnd}".encode())
+        else:
+            self.ser.write(f"{self.cmdStart}DC{self.cmdEnd}".encode())
+            
         returnLine: str = self.ser.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-
-    def CC(self, iReads: int) -> list[int | float]:
-        """
-        # DEBUG: only available in debug firmware.
-
-        ### CR, but as a toggle.
-        Will contiuously read until the command is sent again.
-
-        :param iReads: interval inbetween reads [ms]
-        :type iReads: int
-
-        :return: [time, force]
-        :rtype: list[int, float]
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}CC {iReads}{self.cmdEnd}".encode())
-        if self.stdDelay > 0:
-            sleep(self.stdDelay)
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-        time, force = returnLine.split(": ")[-1].split(";")
-        return [int(time), float(force)]
+            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
+            self.errorSignal.emit()
