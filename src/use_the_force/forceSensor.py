@@ -61,7 +61,7 @@ class ForceSensor():
     def connectPort(self, PortName: str, baudrate: int = 115200, timeout: float | None = 2.) -> serial.Serial:
         return serial.Serial(port=PortName, baudrate=baudrate, timeout=timeout)
 
-    def reGauge(self, reads: int = 10, skips: int = 3):
+    def reGauge(self, reads: int = 10, skips: int = 3) -> int:
         """
         !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
         
@@ -71,12 +71,15 @@ class ForceSensor():
         :type reads: int
         :param skips: initial lines to skip (and clear old values)
         :type skips: int
+
+        :returns: Gauge value
+        :rtype: int
         """
         self.ser.reset_input_buffer()
         skips: list[float] = [self.cmd.SR() for i in range(skips)]
         read_values: list[float] = [self.cmd.SR() for i in range(reads)]
         self.GaugeValue = int(sum(read_values)/reads)
-        print("Self-gauged value: " + str(self.GaugeValue))
+        return self.GaugeValue
     
     def updateNpC(self, force: float, reads: int = 10) -> float:
         """Updates Newton per Count
