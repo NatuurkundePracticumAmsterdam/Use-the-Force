@@ -3,6 +3,11 @@ import serial
 
 # TODO: add all new commands...
 
+__all__ = [
+    "ForceSensor",
+    "Commands"
+]
+
 class ForceSensor():
     def __init__(self, 
                  PortName: str = "/dev/ttyACM0", 
@@ -50,6 +55,8 @@ class ForceSensor():
         # and click the tab "Ports (COM&LPT)".s
         self.ser: serial.Serial = self.connectPort(
             self.PortName, baudrate=self.baudrate, timeout=self.timeout)
+        
+        cmd = Commands(self.ser)
 
     def connectPort(self, PortName: str, baudrate: int = 115200, timeout: float | None = 2.) -> serial.Serial:
         return serial.Serial(port=PortName, baudrate=baudrate, timeout=timeout)
@@ -66,10 +73,24 @@ class ForceSensor():
         :type skips: int
         """
         self.ser.reset_input_buffer()
-        skips: list[float] = [self.GetReading()[2] for i in range(skips)]
-        read_values: list[float] = [self.GetReading()[2] for i in range(reads)]
+        skips: list[float] = [self.cmd.SR() for i in range(skips)]
+        read_values: list[float] = [self.cmd.SR() for i in range(reads)]
         self.GaugeValue = int(sum(read_values)/reads)
         print("Self-gauged value: " + str(self.GaugeValue))
+    
+    def updateNpC(self, force: float, reads: int = 10) -> float:
+        """Updates Newton per Count
+
+        Args:
+            force (float): Applied known force
+            reads (int): Times to read load cell and take average
+        
+        Returns:
+            float: Newton per Count
+        """
+        read_values: list[float] = [self.cmd.SR() for i in range(reads)]
+        self.NewtonPerCount = force/int(sum(read_values)/reads)
+        return self.NewtonPerCount
 
     def ForceFix(self, count: float) -> float:
         """Corrects the units given based on GaugeValue and NewtonPerCount
@@ -88,6 +109,7 @@ class ForceSensor():
         Always close after use.
         """
         self.ser.close()
+
 
 class Commands():
     def __init__(self, serialConnection: serial.Serial, **kwargs) -> None:
