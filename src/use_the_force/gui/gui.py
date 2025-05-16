@@ -217,6 +217,7 @@ class UserInterface(QtWidgets.QMainWindow):
             if self.error() == 1: # 1 = Ok
                 self.butSave()
 
+
     def plot(self, **kwargs) -> None:
         """
         Plots the data on the central plot.
@@ -442,6 +443,12 @@ class UserInterface(QtWidgets.QMainWindow):
         except RuntimeError as e:
             self.sensor.ClosePort()
             self.resetConnectUI()
+            self.ui.errorMessage = [
+                                    "Connection Error", 
+                                    "Connection Error", 
+                                    "[ERROR]: Retrieved no data."
+                                ]
+            self.error()
             return
 
         pos = self.sensor.GP()
