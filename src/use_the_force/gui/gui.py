@@ -171,6 +171,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butTareDisplay,
             self.ui.setForceApplied
         )
+        self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor")
 
     def setConnectedUI(self) -> None:
         """
@@ -432,7 +433,13 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # needs time or it will break
         sleep(0.5)
-        if self.sensor.SR() == 0:
+        try:
+            vr = self.sensor.VR()
+            if vr == '':
+                raise RuntimeError("[ERROR]: Returned empty string.")
+            else:
+                self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor v:"+vr.split(":")[1][1:])
+        except RuntimeError as e:
             self.sensor.ClosePort()
             self.resetConnectUI()
             return
@@ -1553,6 +1560,25 @@ class ForceSensorGUI(QObject, QRunnable):
         if returnLine.split(":")[0] == "[ERROR]":
             self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
             self.errorSignal.emit()
+    
+    def VR(self) -> str:
+        """
+        ### Version
+        
+        Returns current running firmware version of the sensor.
+
+        :returns: Firmware Version
+        :rtype: str
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}VR{self.cmdEnd}".encode())
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        else:
+            return returnLine
 
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self) -> None:
