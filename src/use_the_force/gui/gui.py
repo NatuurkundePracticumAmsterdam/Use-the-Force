@@ -142,6 +142,7 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # TODO: add screen for movement options and movement cycles.
         # ^ Might never update this one ^
+        self.ui.butSwapPositions.setEnabled(True)
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -443,6 +444,7 @@ class UserInterface(QtWidgets.QMainWindow):
             return
 
         pos = self.sensor.GP()
+        self.ui.setVelocity.setValue(self.sensor.GV())
         if pos<47 and pos>=0:
             self.homed = True
             self.enableElement(
@@ -1174,7 +1176,7 @@ class mainLogWorker(QObject, QRunnable):
         if currentPos != startPos:
             self.callerSelf.sensor.SP(startPos)
             # wait until the stage has reached the start position
-            sleep(abs(startPos - currentPos) * trueVelocity + 1)
+            sleep(abs(startPos - currentPos) / trueVelocity + 1)
         self.singleReadForces = self.callerSelf.singleReadForces
         
         _skip: list[float] = [self.callerSelf.sensor.SR()
@@ -1482,7 +1484,24 @@ class ForceSensorGUI(QObject, QRunnable):
                 self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
                 self.errorSignal.emit()
                 return 0
+    def GV(self) -> int:
+        """
+        ### Get Velocity
+        Returns the current velocity of the steppermotor stage in milimeters per second.
 
+        :return: End velocity if moving, else current velocity [mm/s]
+        :rtype: int
+        
+        :raises RunTimeError: If sensor encounters an error.
+        """
+        self.ser.flush()
+        self.ser.write(f"{self.cmdStart}GV{self.cmdEnd}".encode())
+        returnLine: str = self.ser.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        else:
+            return int(returnLine.split(": ")[-1])
+    
     def SF(self, load: float = 1.) -> None:
         """
         ### Set force slope for display
