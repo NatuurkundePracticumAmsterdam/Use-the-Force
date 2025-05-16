@@ -563,11 +563,14 @@ class UserInterface(QtWidgets.QMainWindow):
                 pass # one day will be able to wait for motor to stop.
 
         else:
-            if not self.fileOpen and len(self.data[0])>0:
-                self.ui.errorMessage = [
-                    "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
-                if self.error() == 1: # 1 = Ok
-                    self.butSave()
+            if len(self.data[0])>0:
+                if not self.fileOpen:
+                    self.ui.errorMessage = [
+                        "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
+                    if self.error() == 1: # 1 = Ok
+                        self.butSave()
+                self.butClear()
+
             self.recording = True
             self.threadReachedEnd = False
             self.ui.butRecord.setText("Stop")
@@ -585,7 +588,7 @@ class UserInterface(QtWidgets.QMainWindow):
             )
 
             self.sensor.ser.reset_input_buffer()
-            self.butClear()
+            
 
             if self.ui.setStartPos.value() == self.ui.setEndPos.value() and self.plotIndexX!=0 and self.ui.setTime.value()>0:
                 self.switchPlotIndexX(0)
@@ -1161,10 +1164,6 @@ class mainLogWorker(QObject, QRunnable):
         self.singleReadForces: int = self.callerSelf.singleReadForces
 
     def run(self) -> None:
-        if not self.logLess:
-            self.callerSelf.data = self.callerSelf.measurementLog.readLog(
-                filename=self.callerSelf.filePath)
-
         # mm/s speed of stage
         trueVelocity: float = (self.callerSelf.velocity)/60
 
