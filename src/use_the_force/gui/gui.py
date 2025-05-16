@@ -447,12 +447,13 @@ class UserInterface(QtWidgets.QMainWindow):
         vel = self.sensor.GV()
         self.ui.setVelocity.setValue(vel)
         self.velocity = vel
-        if pos<47 and pos>=0:
+        if pos>=0 and pos<47:
             self.homed = True
             self.enableElement(
                 self.ui.butRecord,
                 self.ui.butMove
             )
+            self.ui.setPosition.setValue(pos)
         
         self.setConnectedUI()
 
