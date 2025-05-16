@@ -1,17 +1,20 @@
 import sys
 from time import perf_counter_ns, sleep
+
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot, Qt
 from PySide6.QtGui import QCloseEvent, QTextBlockFormat, QResizeEvent
 import pyqtgraph as pg
+
 import threading
 import bisect
 import serial
-import re
 from serial.tools import list_ports  # type: ignore
+import re
+
 from .main_ui import Ui_MainWindow
 from .error_ui import Ui_errorWindow
-
+from ..forceSensor import Commands
 from ..logging import Logging
 
 
@@ -111,6 +114,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # MULTITHREADING #
         ##################
         self.sensor = ForceSensorGUI(caller=self)
+        self.cmds = Commands(self.sensor.ser)
         self.sensor.errorSignal.connect(self.error)
 
         self.plotTimer = QTimer()
@@ -217,7 +221,6 @@ class UserInterface(QtWidgets.QMainWindow):
             if self.error() == 0: # 0 = Cancel
                 event.ignore()
                 self.butSave()
-
 
     def plot(self, **kwargs) -> None:
         """
@@ -436,7 +439,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # needs time or it will break
         sleep(0.5)
         try:
-            vr = self.sensor.VR()
+            vr = self.cmds.VR()
             if vr == '':
                 raise RuntimeError("[ERROR]: Returned empty string.")
             else:
@@ -452,8 +455,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.error()
             return
 
-        pos = self.sensor.GP()
-        vel = self.sensor.GV()
+        pos = self.cmds.GP()
+        vel = self.cmds.GV()
         self.ui.setVelocity.setValue(vel)
         self.velocity = vel
         if pos>=0 and pos<47:
@@ -657,7 +660,7 @@ class UserInterface(QtWidgets.QMainWindow):
             i -= 1
 
         self.ui.butReGauge.setText("...")
-        self.sensor.reGauge()
+        self.ui.setGaugeValue.setValue(self.cmds.reGauge())
         self.ui.butReGauge.setText("Tare")
 
         if (not self.MDMActive) and self.homed:
@@ -1102,17 +1105,17 @@ class UserInterface(QtWidgets.QMainWindow):
             pass
 
     def butMove(self) -> None:
-        self.sensor.SP(self.ui.setPosition.value())
+        self.cmds.SP(self.ui.setPosition.value())
 
     def butUpdateVelocity(self) -> None:
         self.velocity = int(self.ui.setVelocity.value())
-        self.sensor.SV(self.velocity)
+        self.cmds.SV(self.velocity)
 
     def butHome(self) -> None:
         self.ui.errorMessage = ["Home Warning", "Home Warning", "Make sure nothing is obstructing the path downwards.<br>The motor will not stop during homing!"]
         if self.error()==1:
             self.butUpdateVelocity()
-            self.sensor.HM()
+            self.cmds.HM()
             self.homed = True
             self.enableElement(
                 self.ui.butRecord,
@@ -1138,17 +1141,17 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butSwitchManual
             )
 
-        self.sensor.ST()
+        self.cmds.ST()
 
     def butDisplayTare(self) -> None:
-        self.sensor.TR()
+        self.cmds.TR()
 
     def butDisplayForce(self) -> None:
-        self.sensor.SF(float(self.ui.setForceApplied.value()))
+        self.cmds.SF(float(self.ui.setForceApplied.value()))
 
     def updateUnitDisplay(self) -> None:
         if self.butConnectToggle:
-            self.sensor.UU(str(self.ui.setUnitDisplay.text()))
+            self.cmds.UU(str(self.ui.setUnitDisplay.text()))
 
     def swapPositions(self) -> None:
         startPos = self.ui.setStartPos.value()
@@ -1175,7 +1178,7 @@ class mainLogWorker(QObject, QRunnable):
         # mm/s speed of stage
         trueVelocity: float = (self.callerSelf.velocity)/60
 
-        currentPos: int = self.callerSelf.sensor.GP()
+        currentPos: int = self.callerSelf.cmds.GP()
         startPos: int = self.callerSelf.ui.setStartPos.value()
         endPos: int = self.callerSelf.ui.setEndPos.value()
         Position: float = 0.
@@ -1184,21 +1187,21 @@ class mainLogWorker(QObject, QRunnable):
         measurementTime: float = travelTime + self.callerSelf.ui.setTime.value()
         allowTimeSwitch = self.callerSelf.ui.setTime.value() != 0.
         if currentPos != startPos:
-            self.callerSelf.sensor.SP(startPos)
+            self.callerSelf.cmds.SP(startPos)
             # wait until the stage has reached the start position
             sleep(abs(startPos - currentPos) / trueVelocity + 1)
         self.singleReadForces = self.callerSelf.singleReadForces
         
-        _skip: list[float] = [self.callerSelf.sensor.SR()
+        _skip: list[float] = [self.callerSelf.cmds.SR()
                               for i in range(self.callerSelf.singleReadSkips)]
 
         self.startSignal.emit()
-        self.callerSelf.sensor.DC(False)
+        self.callerSelf.cmds.DC(False)
         time = float(0.)
         self.callerSelf.sensor.T0 = perf_counter_ns()
 
         # start movement
-        self.callerSelf.sensor.SP(endPos)
+        self.callerSelf.cmds.SP(endPos)
 
         while (time < measurementTime) and self.callerSelf.recording:
             try:
@@ -1224,7 +1227,7 @@ class mainLogWorker(QObject, QRunnable):
                 # I know this isn't the best way to deal with it, but it works fine (for now)
                 pass
         
-        self.callerSelf.sensor.DC()
+        self.callerSelf.cmds.DC()
         self.endSignal.emit()
 
         if self.callerSelf.recording:
@@ -1237,7 +1240,7 @@ class mainLogWorker(QObject, QRunnable):
     
     def read(self) -> float:
         forces: list[float] = [self.callerSelf.sensor.ForceFix(
-            self.callerSelf.sensor.SR()) for i in range(self.singleReadForces)]
+            self.callerSelf.cmds.SR()) for i in range(self.singleReadForces)]
         Force = round(
             sum(forces)/self.singleReadForces,
             ndigits=8
@@ -1248,11 +1251,10 @@ class mainLogWorker(QObject, QRunnable):
     def singleRead(self) -> None:
         self.singleReadStartSignal.emit()
         self.singleReadForces = self.callerSelf.singleReadForces
-        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.SR())
+        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.cmds.SR())
                             for i in range(self.callerSelf.singleReadSkips)]
         self.callerSelf.singleReadForce = self.read()
         self.singleReadEndSignal.emit()
-
 
 class saveToLog(QObject, QRunnable):
     startSignal = Signal()
@@ -1267,15 +1269,21 @@ class saveToLog(QObject, QRunnable):
         self.callerSelf.measurementLog.writeLogFull(self.callerSelf.data)
         self.endSignal.emit()
 
-
 class ForceSensorGUI(QObject, QRunnable):
     errorSignal = Signal()
 
-    def __init__(self, caller: UserInterface) -> None:
+    def __init__(self, caller: UserInterface, **kwargs) -> None:
         super().__init__()
         self.caller: UserInterface = caller
         self.ui: Ui_MainWindow = caller.ui
         self.failed: bool = False
+
+        self.baudrate: int = kwargs.pop('baudrate', 115200)
+        self.timeout: float = kwargs.pop('timeout', 10.)
+        self.ser = serial.Serial(baudrate=self.baudrate,
+                                 timeout=self.timeout,
+                                 dsrdtr=False
+                                )
 
     def __call__(self, **kwargs) -> None:
         """
@@ -1287,9 +1295,6 @@ class ForceSensorGUI(QObject, QRunnable):
         self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.value())
 
         self.encoding: str = kwargs.pop('encoding', "UTF-8")
-
-        self.baudrate: int = kwargs.pop('baudrate', 115200)
-        self.timeout: float = kwargs.pop('timeout', 10.)
 
         self.gaugeRound: int = kwargs.pop("gaugeLines", 6)
         self.gaugeLines: int = kwargs.pop("gaugeLines", 10)
@@ -1306,11 +1311,8 @@ class ForceSensorGUI(QObject, QRunnable):
         # To find the correct port: go to Windows Settings, Search for Device Manager,
         # and click the tab "Ports (COM&LPT)".
         try:
-            self.ser = serial.Serial(self.PortName,
-                                     baudrate=self.baudrate,
-                                     timeout=self.timeout,
-                                     dsrdtr=False
-                                    )
+            self.ser.setPort(self.PortName)
+            self.ser.open()
             self.ser.setRTS(False)
             self.ser.setDTR(False)
         except Exception as e:
@@ -1318,38 +1320,6 @@ class ForceSensorGUI(QObject, QRunnable):
             self.ui.errorMessage = [
                 e.__class__.__name__, e.args[0]+"\n\nCheck if Port is not already in use."]
             self.errorSignal.emit()
-
-    def reGauge(self) -> None:
-        """
-        # !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
-        """
-        skips: list[float] = [self.SR()
-                              for i in range(self.gaugeSkipLines)]
-        del skips
-        reads: list[float] = [self.SR()
-                              for i in range(self.gaugeLines)]
-        self.GaugeValue = round(sum(reads)/self.gaugeLines, self.gaugeRound)
-        self.ui.setGaugeValue.setValue(self.GaugeValue)
-
-    def GetReading(self) -> list[int | float]:
-        """
-        # DEPRICATED: use `SR()` instead.
-        Reads a line of the M5Din Meter
-
-        :returns: singular read line as [ID, Force]
-        :rtype: list[int, float]
-        """
-        # 'readline()' gives a value from the serial connection in 'bytes'
-        # 'decode()'   turns 'bytes' into a 'string'
-        # 'float()'    turns 'string' into a floating point number.
-        while True:
-            try:
-                line: str = self.ser.readline().decode(self.encoding)
-                self.ser.reset_input_buffer()
-                ID, force = line.strip().split(",")
-                return [float(perf_counter_ns()-self.T0), float(force)]
-            except ValueError:
-                pass
 
     def ForceFix(self, x: float) -> float:
         """
@@ -1369,223 +1339,6 @@ class ForceSensorGUI(QObject, QRunnable):
         """
         self.ser.close()
 
-    def SR(self) -> float:
-        """
-        ### Single Read
-        Reads the force a single time.
-
-        :return: read force
-        :rtype: float
-        """
-        self.ser.reset_input_buffer()
-        self.ser.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
-        returnLine = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-            return 0
-        else:
-            try:
-                return float(returnLine.split(": ")[-1])
-            except Exception as e:
-                self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
-                self.errorSignal.emit()
-                return 0
-    
-    def TR(self) -> None:
-        """
-        ### Tares display value
-
-        Only changes the converted display value (bottom one), does not change serial output.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-
-    def ST(self) -> None:
-        """
-        ### Stops the Motor
-
-        Stops the motor by simulating too much force. Needs to home after being called.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if not (returnLine.split(":")[0] == "[ERROR]" and returnLine.split(":")[1] == " movement aborted, home to unlock"):
-            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-        elif returnLine.split(":")[0] == "[ERROR]":
-            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-
-    def SP(self, position: int) -> None:
-        """
-        ### Set Position
-        Sets the position of the steppermotor stage in milimeters.
-
-        :param position: position to set from bottom [mm]
-        :type position: int
-        """
-        self.ser.flush()
-        self.ser.flushInput()
-        self.ser.flushOutput()
-        self.ser.write(f"{self.cmdStart}SP {position}{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.ui.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-
-    def SV(self, velocity: int) -> None:
-        """
-        ### Set Velocity
-        Sets the velocity of the steppermotor stage in milimeters per second.
-
-        :param velocity: velocity to set [mm/s]
-        :type velocity: int
-        """
-        self.ser.flush()
-        self.ser.flushInput()
-        self.ser.flushOutput()
-        self.ser.write(f"{self.cmdStart}SV {velocity}{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-
-    def HM(self) -> None:
-        """
-        ### Home
-        Homes the steppermotor stage to the endstop.\\
-        The endstop is a physical switch that stops the motor when it is pressed. (This is position 0)\\
-        Afterwards goes up to a set position inside the firmware.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-
-    def GP(self) -> int:
-        """
-        ### Get Position
-        Current position set in memory.
-
-        Warning: the motor only gives out the position set in memory. 
-        If the motor is moving, this will correspond to the end position instead of the current position.
-
-        :return: End position if moving, else current position in [mm]
-        :rtype: int
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}GP{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-            return 0
-        else:
-            try:
-                return int(returnLine.split(": ")[-1])
-            except Exception as e:
-                self.ui.errorMessage = [e.__class__.__name__, e.args[0]]
-                self.errorSignal.emit()
-                return 0
-    def GV(self) -> int:
-        """
-        ### Get Velocity
-        Returns the current velocity of the steppermotor stage in milimeters per second.
-
-        :return: End velocity if moving, else current velocity [mm/s]
-        :rtype: int
-        
-        :raises RunTimeError: If sensor encounters an error.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}GV{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-        else:
-            return int(returnLine.split(": ")[-1])
-    
-    def SF(self, load: float = 1.) -> None:
-        """
-        ### Set force slope for display
-
-        Recalculates and saves the new force slope based on current load.\\
-        Only changes the display value, not the output.
-
-        :param load: current applied load
-        :type load: float
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}SF {load}{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-    
-    def UU(self, unit:str = " mN") -> None:
-        """
-        ### Set unit for display
-
-        Changes the displayed unit at the end of the display value.
-        Leading spaces are counted, no space means no space between number and unit.
-        
-        :param unit: unit to display
-        :type unit: str
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}UU{unit}{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-    
-    def DC(self, enable: bool = True) -> None:
-        """
-        ### Display Commands
-        
-        Enables or disables the display of commands on the sensor.
-
-        :param enable: If commands should be displayed on sensor.
-        :type enable: bool
-        :value enable: True
-        """
-
-        self.ser.flush()
-        if not enable:
-            self.ser.write(f"{self.cmdStart}DC false{self.cmdEnd}".encode())
-        else:
-            self.ser.write(f"{self.cmdStart}DC{self.cmdEnd}".encode())
-            
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            self.errorMessage = ["RuntimeError", "RuntimeError", returnLine]
-            self.errorSignal.emit()
-    
-    def VR(self) -> str:
-        """
-        ### Version
-        
-        Returns current running firmware version of the sensor.
-
-        :returns: Firmware Version
-        :rtype: str
-        
-        :raises RunTimeError: If sensor encounters an error.
-        """
-        self.ser.flush()
-        self.ser.write(f"{self.cmdStart}VR{self.cmdEnd}".encode())
-        returnLine: str = self.ser.read_until().decode().strip()
-        if returnLine.split(":")[0] == "[ERROR]":
-            raise RuntimeError(returnLine)
-        else:
-            return returnLine
 
 class ErrorInterface(QtWidgets.QDialog):
     def __init__(self) -> None:
