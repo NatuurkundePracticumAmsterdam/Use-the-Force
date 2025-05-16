@@ -60,26 +60,6 @@ class ForceSensor():
 
     def connectPort(self, PortName: str, baudrate: int = 115200, timeout: float | None = 2.) -> serial.Serial:
         return serial.Serial(port=PortName, baudrate=baudrate, timeout=timeout)
-
-    def reGauge(self, reads: int = 10, skips: int = 3) -> int:
-        """
-        !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
-        
-        Updates the GaugeValue by taking the average of `reads` values.
-        
-        :param reads: amount of readings
-        :type reads: int
-        :param skips: initial lines to skip (and clear old values)
-        :type skips: int
-
-        :returns: Gauge value
-        :rtype: int
-        """
-        self.ser.reset_input_buffer()
-        skips: list[float] = [self.cmd.SR() for i in range(skips)]
-        read_values: list[float] = [self.cmd.SR() for i in range(reads)]
-        self.GaugeValue = int(sum(read_values)/reads)
-        return self.GaugeValue
     
     def updateNpC(self, force: float, reads: int = 10) -> float:
         """Updates Newton per Count
@@ -163,6 +143,24 @@ class Commands():
             sleep(self.stdDelay)
         return self.serialConnection.read_until().decode().strip()
 
+    def reGauge(self, reads: int = 10, skips: int = 3) -> int:
+        """
+        !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
+        
+        Updates the GaugeValue by taking the average of `reads` values.
+        
+        :param reads: amount of readings
+        :type reads: int
+        :param skips: initial lines to skip (and clear old values)
+        :type skips: int
+
+        :returns: Gauge value
+        :rtype: int
+        """
+        self.serialConnection.reset_input_buffer()
+        skips: list[float] = [self.SR() for i in range(skips)]
+        read_values: list[float] = [self.SR() for i in range(reads)]
+        return int(sum(read_values)/reads)
     ########################
     # 0 Arguments Commands #
     ########################
