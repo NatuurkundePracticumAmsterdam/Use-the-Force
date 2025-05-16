@@ -61,7 +61,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setStepSizeMDM.valueChanged.connect(self.singleReadStepUpdate)
         self.ui.title_2.textChanged.connect(self.updatePlotMDMTitle)
         self.ui.setUnitDisplay.editingFinished.connect(self.updateUnitDisplay)
-        self.ui.setForceApplied.editingFinished.connect(self.butDisplayForce)
+
         ###############
         # Check Ports #
         ###############
@@ -160,6 +160,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butConnect,
             self.ui.setPortName
         )
+        self.ui.setForceApplied.editingFinished.disconnect(self.butDisplayForce)
         self.disableElement(
             self.ui.setNewtonPerCount,
             self.ui.setGaugeValue,
@@ -191,6 +192,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setForceApplied
         )
         self.disableElement(self.ui.setPortName)
+        self.ui.setForceApplied.editingFinished.connect(self.butDisplayForce)
         if not self.MDMActive:
             if not self.fileOpen:
                 self.butClear()
