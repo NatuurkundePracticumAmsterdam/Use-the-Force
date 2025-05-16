@@ -213,8 +213,9 @@ class UserInterface(QtWidgets.QMainWindow):
             self.butConnect()
         if not (self.fileOpen or self.MDMActive) and len(self.data[0])>0:
             self.ui.errorMessage = [
-                "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
-            if self.error() == 1: # 1 = Ok
+                "Unsaved Data", "Unsaved Data!", "You have unsaved data, quit anyways?"]
+            if self.error() == 0: # 0 = Cancel
+                event.ignore()
                 self.butSave()
 
 
@@ -574,9 +575,10 @@ class UserInterface(QtWidgets.QMainWindow):
             if len(self.data[0])>0:
                 if not self.fileOpen:
                     self.ui.errorMessage = [
-                        "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you want to save the data?"]
-                    if self.error() == 1: # 1 = Ok
+                        "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you wish to continue?"]
+                    if self.error() == 0: # 0 = Cancel
                         self.butSave()
+                        return
                 self.butClear()
 
             self.recording = True
