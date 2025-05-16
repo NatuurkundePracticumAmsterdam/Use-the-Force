@@ -444,7 +444,9 @@ class UserInterface(QtWidgets.QMainWindow):
             return
 
         pos = self.sensor.GP()
-        self.ui.setVelocity.setValue(self.sensor.GV())
+        vel = self.sensor.GV()
+        self.ui.setVelocity.setValue(vel)
+        self.velocity = vel
         if pos<47 and pos>=0:
             self.homed = True
             self.enableElement(
