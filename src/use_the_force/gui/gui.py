@@ -28,14 +28,6 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.error_ui = ErrorInterface()
 
-        #########################
-        # CHANGE FROM UI UPDATE #
-        #########################
-        self.ui.labLineReadsMDM = self.ui.labLineReads
-        self.ui.setLineReadsMDM = self.ui.setLineReads
-        self.ui.labLineSkipsMDM = self.ui.labLineSkips
-        self.ui.setLineSkipsMDM = self.ui.setLineSkips
-
         ###########
         # BUTTONS #
         ###########
