@@ -98,9 +98,10 @@ class Commands():
     def __init__(self, serialConnection: serial.Serial, **kwargs) -> None:
         """Class containing all available commands.
 
-        Args:
-            serialConnection (serial.Serial): serial connection to sensor
-            stdDelay (float): standard delay between sending a message and reading
+        :param serialConnection: serial connection to sensor
+        :type serialConnection: Serial
+        :param stdDelay: standard delay between sending a message and reading
+        :type stdDelay: float
         """
         self.serialConnection: serial.Serial = serialConnection
         self.stdDelay: float = float(kwargs.pop("stdDelay", 0.))
@@ -115,8 +116,8 @@ class Commands():
     def __call__(self, serialConnection: serial.Serial) -> None:
         """Change serial connection
 
-        Args:
-            serialConnection (serial.Serial): new serial connection
+        :param serialConnection: new serial connection
+        :type serialConnection: Serial
         """
         self.serialConnection = serialConnection
 
@@ -145,9 +146,7 @@ class Commands():
 
     def reGauge(self, reads: int = 10, skips: int = 3) -> int:
         """
-        !!!IT'S IMPORTANT NOT TO HAVE ANY FORCE ON THE SENSOR WHEN CALLING THIS FUNCTION!!!
-        
-        Updates the GaugeValue by taking the average of `reads` values.
+        Returns the gauge value by taking the average of `reads` reads.
         
         :param reads: amount of readings
         :type reads: int
@@ -158,9 +157,10 @@ class Commands():
         :rtype: int
         """
         self.serialConnection.reset_input_buffer()
-        skips: list[float] = [self.SR() for i in range(skips)]
-        read_values: list[float] = [self.SR() for i in range(reads)]
+        skips: list[float] = [self.SR() for _ in range(skips)]
+        read_values: list[float] = [self.SR() for _ in range(reads)]
         return int(sum(read_values)/reads)
+    
     ########################
     # 0 Arguments Commands #
     ########################
