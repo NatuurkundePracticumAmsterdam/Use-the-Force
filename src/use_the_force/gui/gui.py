@@ -1169,8 +1169,6 @@ class mainLogWorker(QObject, QRunnable):
         super().__init__()
         self.callerSelf: UserInterface = callerSelf
         self.logLess:bool = bool()
-        self.single:bool = bool(False)
-        self.Force = float()
         self.singleReadForces: int = self.callerSelf.singleReadForces
 
     def run(self) -> None:
@@ -1218,7 +1216,7 @@ class mainLogWorker(QObject, QRunnable):
                 if not self.logLess:
                     # logs: t[s], s[mm], F[mN]
                     self.callerSelf.measurementLog.writeLog(
-                        [time, Position, self.Force])
+                        [time, Position, Force])
                 
                 self.singleReadForces = self.callerSelf.singleReadForces
 
