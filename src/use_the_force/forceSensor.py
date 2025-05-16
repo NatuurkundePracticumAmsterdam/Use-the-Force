@@ -1,8 +1,6 @@
 from time import perf_counter_ns, sleep
 import serial
 
-# TODO: add all new commands...
-
 __all__ = [
     "ForceSensor",
     "Commands"
@@ -10,34 +8,30 @@ __all__ = [
 
 class ForceSensor():
     def __init__(self, 
-                 PortName: str = "/dev/ttyACM0", 
-                 GaugeValue: int = 0, 
-                 NewtonPerVolt: float = 1., 
-                 WarningOn: bool = True, 
-                 MaxNewton: int | float = 5, 
+                 PortName: str | None = None, 
                  **kwargs
                  ) -> None:
         """
-        Opens up the serial port, checks the gauge value and makes sure data is available.
+        Base class for the force sensor with almost all functionality.
 
-        (PySerial library has to be installed on the computer, see requirements.txt)
+        Use ForceSensor.cmds.\<command\>() for commands:
+        >>> sensor = ForceSensor("COM0")
+        >>> commands = sensor.cmds
+        >>> commands.SR()
+        411023
+
+        :param PortName: Portname over which to establish the connection. If None, the this class has to be called again with the port name.
+        :type PortName: str | None
         """
-        ####### SOME PARAMETERS AND STUFF ######
-
         # The 'zero' volt value. Determined automatically each time.
-        self.GaugeValue: int = GaugeValue
-        self.NewtonPerCount: float = NewtonPerVolt
-        # self.NewtonPerVolt = 1  # value I set for calibration
-        self.WarningOn: bool = WarningOn  # >MaxNewton is dangerous for sensor.
-        self.MaxNewton: int | float = MaxNewton
+        self.GaugeValue: int = int(kwargs.pop('GaugeValue', 0))
+        self.NewtonPerCount: float = int(kwargs.pop('NewtonPerCount', 1.))
 
         self.encoding: str = str(kwargs.pop('encoding', "UTF-8"))
 
         self.baudrate: int = int(kwargs.pop('baudrate', 115200))
         self.timeout: float = float(kwargs.pop('timeout', 5.))
 
-        # 150/1000 # base delay of the M5Din Meter to send a response [seconds]
-        self.stdDelay: float = 0.
         self.cmdStart: str = str(kwargs.pop('cmdStart', "#"))
         self.cmdEnd: str = str(kwargs.pop('cmdEnd', ";"))
         self.currentReads: list[list[float]] = [[], []]
@@ -53,23 +47,41 @@ class ForceSensor():
         # The 'COM'-port depends on which plug is used at the back of the computer.
         # To find the correct port: go to Windows Settings, Search for Device Manager,
         # and click the tab "Ports (COM&LPT)".s
-        self.ser: serial.Serial = self.connectPort(
-            self.PortName, baudrate=self.baudrate, timeout=self.timeout)
-        
-        cmd = Commands(self.ser)
+        self.ser: serial.Serial = serial.Serial(port=PortName, baudrate=self.baudrate, timeout=self.timeout)
+        self.ser.setRTS(False)
+        self.ser.setDTR(False)
 
-    def connectPort(self, PortName: str, baudrate: int = 115200, timeout: float | None = 2.) -> serial.Serial:
-        return serial.Serial(port=PortName, baudrate=baudrate, timeout=timeout)
+        cmds = Commands(self.ser)
+
+        if PortName != None:
+            self.ser.setPort(self.PortName)
+            self.ser.open()
     
-    def updateNpC(self, force: float, reads: int = 10) -> float:
-        """Updates Newton per Count
+    def __call__(self, PortName: str):
+        """
+        Open the serial connection if not already open.
 
-        Args:
-            force (float): Applied known force
-            reads (int): Times to read load cell and take average
-        
-        Returns:
-            float: Newton per Count
+        >>> sensor = ForceSensor()
+        >>> sensor("COM0")
+
+        :param PortName: Portname over which to establish the connection.
+        :type PortName: str
+        """
+        if not self.ser.is_open:
+            self.PortName = PortName
+            self.ser.setPort(self.PortName)
+            self.ser.open()
+
+    def updateNpC(self, force: float, reads: int = 10) -> float:
+        """Updates and returns Newton per Count
+
+        :param force: Applied known force
+        :type force: float
+        :param reads: Times to read load cell and take average
+        :type reads: int
+
+        :returns: Newton per Count
+        :rtype: float:
         """
         read_values: list[float] = [self.cmd.SR() for i in range(reads)]
         self.NewtonPerCount = force/int(sum(read_values)/reads)
@@ -98,6 +110,8 @@ class Commands():
     def __init__(self, serialConnection: serial.Serial, **kwargs) -> None:
         """Class containing all available commands.
 
+        For more explanation, see the firmware [GitHub](https://github.com/NatuurkundePracticumAmsterdam/use-the-force-firmware).
+
         :param serialConnection: serial connection to sensor
         :type serialConnection: Serial
         :param stdDelay: standard delay between sending a message and reading
@@ -124,12 +138,13 @@ class Commands():
     def customCmd(self, cmd: str, *args) -> str:
         """Custom command
 
-        Args:
-            cmd (str): command to send
-            args (tuple): additional arguments for the command
+        :param cmd: command to send
+        :type cmd: str
+        :param args: additional arguments for the command
+        :type args: tuple
 
-        Returns:
-            str: return line
+        :returns: return line
+        :rtype: str
         """
         self.serialConnection.flush()
         cmdStr = f"{self.cmdStart}{cmd}"
@@ -166,7 +181,7 @@ class Commands():
     ########################
     def AB(self) -> None:
         """
-        ### Abort Continous Reading
+        ### Abort CR
         
         Aborts the continous reading.
         
