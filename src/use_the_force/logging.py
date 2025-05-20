@@ -1,5 +1,8 @@
 from io import TextIOWrapper
 
+__all__ = [
+    "Logging"
+]
 
 class Logging():
     def __init__(self, filename: str = '', NeverCloseFile: bool = False, extension: str = ".csv") -> None:

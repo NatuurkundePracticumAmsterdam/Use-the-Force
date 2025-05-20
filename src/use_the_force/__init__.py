@@ -2,12 +2,13 @@
 Small module to be used in the Use the Force! practicum at VU & UvA.
 """
 
-from .forceSensor import ForceSensor
-from .logging import Logging
-from .plotting import Plotting
+from .forceSensor import *
+from .logging import *
+from .plotting import *
 
 __all__ = [
     "ForceSensor",
     "Logging",
-    "Plotting"
+    "Plotting",
+    "Commands"
 ] # type: ignore

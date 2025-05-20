@@ -17,6 +17,14 @@ from .error_ui import Ui_errorWindow
 from ..forceSensor import Commands
 from ..logging import Logging
 
+__all__ = [
+    "UserInterface",
+    "mainLogWorker",
+    "saveToLog",
+    "ForceSensorGUI",
+    "ErrorInterface",
+    "start"
+]
 
 class UserInterface(QtWidgets.QMainWindow):
     def __init__(self) -> None:

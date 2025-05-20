@@ -19,6 +19,10 @@ from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QDialogBu
     QLabel, QLayout, QSizePolicy, QVBoxLayout,
     QWidget)
 
+__all__ = [
+    "Ui_errorWindow"
+]
+
 class Ui_errorWindow(object):
     def setupUi(self, errorWindow):
         if not errorWindow.objectName():

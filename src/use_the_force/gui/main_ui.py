@@ -23,6 +23,10 @@ from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QDoubleSpinBox, Q
 
 from pyqtgraph import PlotWidget
 
+__all__ = [
+    "Ui_MainWindow"
+]
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():

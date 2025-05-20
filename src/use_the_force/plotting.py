@@ -5,6 +5,9 @@ import matplotlib
 matplotlib.use('TkAgg') 
 # self.plt.ion()
 
+__all__ = [
+    "Plotting"
+]
 
 class Plotting():
     def __init__(self, xlabel: str = "Time (s)", ylabel: str = "Force (mN)", **kwargs) -> None:
