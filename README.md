@@ -28,5 +28,12 @@ ret = app.exec_()
 sys.exit(ret)
 ```
 
+## Additional Info
+#### Motorstage speed:
+`SV(100)` = 1 + 2/3 mm/s\
+`SV(100)` ~ 1.666... mm/s\
+`SV(60)` = 1 mm/s\
+`SV(30)` = 0.5 mm/s
+
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

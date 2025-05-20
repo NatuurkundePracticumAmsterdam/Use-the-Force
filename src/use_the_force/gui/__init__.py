@@ -1,5 +1,5 @@
 """
-Small module to be used in the Use the Force! practicum at VU & UvA.
+GUI module to launch the GUI.
 """
 
 from .gui import *
@@ -12,7 +12,9 @@ __all__ = [
     "saveToLog",
     "ForceSensorGUI",
     "ErrorInterface",
-    "start"
+    "start",
+
     "Ui_MainWindow",
+
     "Ui_errorWindow"
 ] # type: ignore

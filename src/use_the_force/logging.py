@@ -1,5 +1,8 @@
 from io import TextIOWrapper
 
+__all__ = [
+    "Logging"
+]
 
 class Logging():
     def __init__(self, filename: str = '', NeverCloseFile: bool = False, extension: str = ".csv") -> None:
@@ -14,7 +17,7 @@ class Logging():
         self.NeverCloseFile: bool = NeverCloseFile
         self.extension: str = extension
 
-    def createLog(self, ext='.csv') -> None:
+    def createLog(self, ext: str = '.csv') -> None:
         """
         Creates a new file for logging.
         """
@@ -34,11 +37,13 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
+        
+        self.HAND.write("Time,Displacement,Force\n")
 
         if not self.NeverCloseFile:
             self.HAND.close()
 
-    def createLogGUI(self, ext='.csv') -> None:
+    def createLogGUI(self) -> None:
         """
         Creates a new file for logging, GUI variant.
         """
@@ -48,11 +53,12 @@ class Logging():
 
         # Create this file.
         self.HAND = open(self.full_filename, 'w+')
+        self.HAND.write("Time,Displacement,Force\n")
         self.HAND.close()
         if self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
 
-    def replaceFile(self, data):
+    def replaceFile(self, data: list[float|int]):
         self.HAND = open(self.full_filename, "w+t")
         self.NeverCloseFile = True
         self.writeLogFull(data=data)
@@ -61,8 +67,7 @@ class Logging():
 
     ### ===LOGGING FUNCTION===###
     # Puts the values in the given list into the opened log file.
-
-    def writeLog(self, data) -> None:
+    def writeLog(self, data: list[float|int]) -> None:
 
         # Open file
         if not self.NeverCloseFile:
@@ -83,21 +88,26 @@ class Logging():
         if not self.NeverCloseFile:
             self.HAND.close()
 
-    def writeLogFull(self, data) -> None:
+    def writeLogFull(self, data: list[float|int]) -> None:
 
         # Open file
         if not self.NeverCloseFile:
             self.HAND = open(self.full_filename, 'a+')
+        # Write data, variable length of `data`
+        for indexData in range(len(data[0])):
+            line: str = str()
+            lineValues: list[int|float] = []
 
-        # Write data
-        for d, F in zip(data[0], data[1]):
-            self.HAND.write(str(round(d, 8))+","+str(round(F, 8))+"\n")
+            for indexUnit in range(len(data)):
+                lineValues.append(str(data[indexUnit][indexData]))
+            line = ",".join(lineValues) + "\n"
+            self.HAND.write(line)
+
         # Close file
         if not self.NeverCloseFile:
             self.HAND.close()
 
     ### ===READ LOG===###
-
     def readLog(self, *, filename: str | None = None) -> list[list[float]]:
         if filename == None:
             filename = self.filename
@@ -107,11 +117,12 @@ class Logging():
         else:
             file = open(filename, "r")
 
-        data = [[], []]
-        for line in file:
-            t, F = line.strip().split(",")
+        data = [[], [], []]
+        for line in file[1:]:
+            t, s, F = line.strip().split(",")
             data[0].append(float(t))
-            data[1].append(float(F))
+            data[1].append(float(s))
+            data[2].append(float(F))
 
         file.close()
         return data
