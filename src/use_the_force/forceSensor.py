@@ -24,36 +24,27 @@ class ForceSensor():
         :type PortName: str | None
         """
         # The 'zero' volt value. Determined automatically each time.
-        self.GaugeValue: int = int(kwargs.pop('GaugeValue', 0))
-        self.NewtonPerCount: float = int(kwargs.pop('NewtonPerCount', 1.))
-
-        self.encoding: str = str(kwargs.pop('encoding', "UTF-8"))
-
-        self.baudrate: int = int(kwargs.pop('baudrate', 115200))
-        self.timeout: float = float(kwargs.pop('timeout', 5.))
-
-        self.cmdStart: str = str(kwargs.pop('cmdStart', "#"))
-        self.cmdEnd: str = str(kwargs.pop('cmdEnd', ";"))
-        self.currentReads: list[list[float]] = [[], []]
+        self.tareValue: int = int(kwargs.pop('tareValue', 0))
+        self.tareRound: int = int(kwargs.pop('tareRound', 0))
+        self.loadPerCount: float = int(kwargs.pop('loadPerCount', 1.))
 
         self.minPos: int = int(kwargs.pop('minPos', 1))  # [mm]
         self.maxPos: int = int(kwargs.pop('maxPos', 46))  # [mm]
 
         self.T0: int = perf_counter_ns()
 
-        self.PortName: str = PortName
-
         ####### PORT INIT ######
         # The 'COM'-port depends on which plug is used at the back of the computer.
         # To find the correct port: go to Windows Settings, Search for Device Manager,
         # and click the tab "Ports (COM&LPT)".s
-        self.ser: serial.Serial = serial.Serial(port=PortName, baudrate=self.baudrate, timeout=self.timeout)
+        self.ser: serial.Serial = serial.Serial(port=PortName, baudrate=115200, timeout=5, dsrdtr=False)
         self.ser.setRTS(False)
         self.ser.setDTR(False)
 
-        cmds = Commands(self.ser)
+        self.cmds = Commands(self.ser)
 
         if PortName != None:
+            self.PortName = PortName.upper()
             self.ser.setPort(self.PortName)
             self.ser.open()
     
@@ -68,27 +59,45 @@ class ForceSensor():
         :type PortName: str
         """
         if not self.ser.is_open:
-            self.PortName = PortName
+            self.PortName = PortName.upper()
             self.ser.setPort(self.PortName)
             self.ser.open()
+    
+    def tare(self, reads: int = 10, skips: int = 3) -> int:
+        """
+        Updates and returns the tare value by taking the average of `reads` reads.
+        
+        :param reads: amount of readings
+        :type reads: int
+        :param skips: initial lines to skip (and clear old values)
+        :type skips: int
 
-    def updateNpC(self, force: float, reads: int = 10) -> float:
-        """Updates and returns Newton per Count
+        :returns: Tare value
+        :rtype: int
+        """
+        self.ser.reset_input_buffer()
+        skips: list[float] = [self.cmds.SR() for _ in range(skips)]
+        read_values: list[float] = [self.cmds.SR() for _ in range(reads)]
+        self.tareValue = round(sum(read_values)/reads, self.tareRound)
+        return self.tareValue
 
-        :param force: Applied known force
-        :type force: float
+    def updateLpC(self, load: float, reads: int = 10) -> float:
+        """Updates and returns Load per Count
+
+        :param load: Applied known load (Newton, gram, ...)
+        :type load: float
         :param reads: Times to read load cell and take average
         :type reads: int
 
-        :returns: Newton per Count
-        :rtype: float:
+        :returns: Load per Count
+        :rtype: float
         """
         read_values: list[float] = [self.cmd.SR() for i in range(reads)]
-        self.NewtonPerCount = force/int(sum(read_values)/reads)
-        return self.NewtonPerCount
+        self.loadPerCount = load/int(sum(read_values)/reads)
+        return self.loadPerCount
 
     def ForceFix(self, count: float) -> float:
-        """Corrects the units given based on GaugeValue and NewtonPerCount
+        """Corrects the units given based on tareValue and loadPerCount
 
         Args:
             count (float): sensor count
@@ -97,7 +106,7 @@ class ForceSensor():
             float: calibrated units
         """        
         # The output, with gauge, in calibrated units.
-        return (count - self.GaugeValue) * self.NewtonPerCount
+        return (count - self.tareValue) * self.loadPerCount
 
     def ClosePort(self) -> None:
         """
@@ -158,23 +167,6 @@ class Commands():
         if self.stdDelay > 0:
             sleep(self.stdDelay)
         return self.serialConnection.read_until().decode().strip()
-
-    def reGauge(self, reads: int = 10, skips: int = 3) -> int:
-        """
-        Returns the gauge value by taking the average of `reads` reads.
-        
-        :param reads: amount of readings
-        :type reads: int
-        :param skips: initial lines to skip (and clear old values)
-        :type skips: int
-
-        :returns: Gauge value
-        :rtype: int
-        """
-        self.serialConnection.reset_input_buffer()
-        skips: list[float] = [self.SR() for _ in range(skips)]
-        read_values: list[float] = [self.SR() for _ in range(reads)]
-        return int(sum(read_values)/reads)
     
     ########################
     # 0 Arguments Commands #

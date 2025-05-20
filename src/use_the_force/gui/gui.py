@@ -14,7 +14,7 @@ import re
 
 from .main_ui import Ui_MainWindow
 from .error_ui import Ui_errorWindow
-from ..forceSensor import Commands
+from ..forceSensor import Commands,ForceSensor
 from ..logging import Logging
 
 __all__ = [
@@ -62,7 +62,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butSwapPositions.pressed.connect(self.swapPositions)
 
         # Text boxes and value boxes
-        self.ui.setNewtonPerCount.valueChanged.connect(self.setNewtonPerCount)
+        self.ui.setNewtonPerCount.valueChanged.connect(self.setLoadPerCount)
         self.ui.setPlotTimerInterval.textEdited.connect(
             self.updatePlotTimerInterval)
         self.ui.setLineReads.valueChanged.connect(
@@ -122,7 +122,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # MULTITHREADING #
         ##################
         self.sensor = ForceSensorGUI(caller=self)
-        self.cmds = Commands(self.sensor.ser)
+        # self.cmds = Commands(self.sensor.ser)
         self.sensor.errorSignal.connect(self.error)
 
         self.plotTimer = QTimer()
@@ -447,7 +447,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # needs time or it will break
         sleep(0.5)
         try:
-            vr = self.cmds.VR()
+            vr = self.sensor.cmds.VR()
             if vr == '':
                 raise RuntimeError("[ERROR]: Returned empty string.")
             else:
@@ -463,8 +463,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.error()
             return
 
-        pos = self.cmds.GP()
-        vel = self.cmds.GV()
+        pos = self.sensor.cmds.GP()
+        vel = self.sensor.cmds.GV()
         self.ui.setVelocity.setValue(vel)
         self.velocity = vel
         if pos>=0 and pos<47:
@@ -668,7 +668,9 @@ class UserInterface(QtWidgets.QMainWindow):
             i -= 1
 
         self.ui.butReGauge.setText("...")
-        self.ui.setGaugeValue.setValue(self.cmds.reGauge())
+        GaugeValue = self.sensor.tare()
+        self.ui.setGaugeValue.setValue(GaugeValue)
+        self.sensor.tareValue = GaugeValue
         self.ui.butReGauge.setText("Tare")
 
         if (not self.MDMActive) and self.homed:
@@ -1100,30 +1102,30 @@ class UserInterface(QtWidgets.QMainWindow):
         except:
             pass
 
-    def setNewtonPerCount(self) -> None:
+    def setLoadPerCount(self) -> None:
         """
-        Changes the value of NewtonPerCount when textbox is changed
+        Changes the value of LoadPerCount when textbox is changed
 
         Allows for changing the value while still getting live data
         """
         try:
-            self.sensor.NewtonPerCount = float(
+            self.sensor.loadPerCount = float(
                 self.ui.setNewtonPerCount.value())
         except:
             pass
 
     def butMove(self) -> None:
-        self.cmds.SP(self.ui.setPosition.value())
+        self.sensor.cmds.SP(self.ui.setPosition.value())
 
     def butUpdateVelocity(self) -> None:
         self.velocity = int(self.ui.setVelocity.value())
-        self.cmds.SV(self.velocity)
+        self.sensor.cmds.SV(self.velocity)
 
     def butHome(self) -> None:
         self.ui.errorMessage = ["Home Warning", "Home Warning", "Make sure nothing is obstructing the path downwards.<br>The motor will not stop during homing!"]
         if self.error()==1:
             self.butUpdateVelocity()
-            self.cmds.HM()
+            self.sensor.cmds.HM()
             self.homed = True
             self.enableElement(
                 self.ui.butRecord,
@@ -1149,17 +1151,17 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butSwitchManual
             )
 
-        self.cmds.ST()
+        self.sensor.cmds.ST()
 
     def butDisplayTare(self) -> None:
-        self.cmds.TR()
+        self.sensor.cmds.TR()
 
     def butDisplayForce(self) -> None:
-        self.cmds.SF(float(self.ui.setForceApplied.value()))
+        self.sensor.cmds.SF(float(self.ui.setForceApplied.value()))
 
     def updateUnitDisplay(self) -> None:
         if self.butConnectToggle:
-            self.cmds.UU(str(self.ui.setUnitDisplay.text()))
+            self.sensor.cmds.UU(str(self.ui.setUnitDisplay.text()))
 
     def swapPositions(self) -> None:
         startPos = self.ui.setStartPos.value()
@@ -1186,7 +1188,7 @@ class mainLogWorker(QObject, QRunnable):
         # mm/s speed of stage
         trueVelocity: float = (self.callerSelf.velocity)/60
 
-        currentPos: int = self.callerSelf.cmds.GP()
+        currentPos: int = self.callerSelf.sensor.cmds.GP()
         startPos: int = self.callerSelf.ui.setStartPos.value()
         endPos: int = self.callerSelf.ui.setEndPos.value()
         Position: float = 0.
@@ -1195,21 +1197,21 @@ class mainLogWorker(QObject, QRunnable):
         measurementTime: float = travelTime + self.callerSelf.ui.setTime.value()
         allowTimeSwitch = self.callerSelf.ui.setTime.value() != 0.
         if currentPos != startPos:
-            self.callerSelf.cmds.SP(startPos)
+            self.callerSelf.sensor.cmds.SP(startPos)
             # wait until the stage has reached the start position
             sleep(abs(startPos - currentPos) / trueVelocity + 1)
         self.singleReadForces = self.callerSelf.singleReadForces
         
-        _skip: list[float] = [self.callerSelf.cmds.SR()
+        _skip: list[float] = [self.callerSelf.sensor.cmds.SR()
                               for i in range(self.callerSelf.singleReadSkips)]
 
         self.startSignal.emit()
-        self.callerSelf.cmds.DC(False)
+        self.callerSelf.sensor.cmds.DC(False)
         time = float(0.)
         self.callerSelf.sensor.T0 = perf_counter_ns()
 
         # start movement
-        self.callerSelf.cmds.SP(endPos)
+        self.callerSelf.sensor.cmds.SP(endPos)
 
         while (time < measurementTime) and self.callerSelf.recording:
             try:
@@ -1235,7 +1237,7 @@ class mainLogWorker(QObject, QRunnable):
                 # I know this isn't the best way to deal with it, but it works fine (for now)
                 pass
         
-        self.callerSelf.cmds.DC()
+        self.callerSelf.sensor.cmds.DC()
         self.endSignal.emit()
 
         if self.callerSelf.recording:
@@ -1248,7 +1250,7 @@ class mainLogWorker(QObject, QRunnable):
     
     def read(self) -> float:
         forces: list[float] = [self.callerSelf.sensor.ForceFix(
-            self.callerSelf.cmds.SR()) for i in range(self.singleReadForces)]
+            self.callerSelf.sensor.cmds.SR()) for i in range(self.singleReadForces)]
         Force = round(
             sum(forces)/self.singleReadForces,
             ndigits=8
@@ -1259,10 +1261,11 @@ class mainLogWorker(QObject, QRunnable):
     def singleRead(self) -> None:
         self.singleReadStartSignal.emit()
         self.singleReadForces = self.callerSelf.singleReadForces
-        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.cmds.SR())
+        _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.cmds.SR())
                             for i in range(self.callerSelf.singleReadSkips)]
         self.callerSelf.singleReadForce = self.read()
         self.singleReadEndSignal.emit()
+
 
 class saveToLog(QObject, QRunnable):
     startSignal = Signal()
@@ -1277,47 +1280,51 @@ class saveToLog(QObject, QRunnable):
         self.callerSelf.measurementLog.writeLogFull(self.callerSelf.data)
         self.endSignal.emit()
 
-class ForceSensorGUI(QObject, QRunnable):
+
+class ForceSensorGUI(ForceSensor, QObject, QRunnable):
     errorSignal = Signal()
 
-    def __init__(self, caller: UserInterface, **kwargs) -> None:
-        super().__init__()
+    def __init__(self, caller: UserInterface, PortName: str | None = None, **kwargs) -> None:
+        """
+        Class that combines the ForceSensor class with GUI parts and multithreading.
+
+        :param PortName: Portname over which to establish the connection. If None, the this class has to be called again with the port name.
+        :type PortName: str | None
+        """
+        ForceSensor.__init__(self, PortName=PortName, kwargs=kwargs)
+        QObject.__init__(self)
+        QRunnable.__init__(self)
+        
         self.caller: UserInterface = caller
         self.ui: Ui_MainWindow = caller.ui
         self.failed: bool = False
 
-        self.baudrate: int = kwargs.pop('baudrate', 115200)
-        self.timeout: float = kwargs.pop('timeout', 10.)
-        self.ser = serial.Serial(baudrate=self.baudrate,
-                                 timeout=self.timeout,
-                                 dsrdtr=False
-                                )
+        if PortName != None:
+            self.tareValue: float = float(self.ui.setGaugeValue.value())
+            self.loadPerCount: float = float(self.ui.setNewtonPerCount.value())
+
+            self.PortName: str = PortName.upper()
+
+            try:
+                self.ser.setPort(self.PortName)
+                self.ser.open()
+                self.ser.setRTS(False)
+                self.ser.setDTR(False)
+            except Exception as e:
+                self.failed = True
+                self.ui.errorMessage = [
+                    e.__class__.__name__, e.args[0]+"\n\nCheck if Port is not already in use."]
+                self.errorSignal.emit()
 
     def __call__(self, **kwargs) -> None:
         """
         Opens up the serial port, checks the gauge value and makes sure data is available.
-
-        (PySerial library has to be installed on the computer)
         """
-        self.GaugeValue: float = float(self.ui.setGaugeValue.value())
-        self.NewtonPerCount: float = float(self.ui.setNewtonPerCount.value())
-
-        self.encoding: str = kwargs.pop('encoding', "UTF-8")
-
-        self.gaugeRound: int = kwargs.pop("gaugeLines", 6)
-        self.gaugeLines: int = kwargs.pop("gaugeLines", 10)
-        self.gaugeSkipLines: int = kwargs.pop("gaugeSkipLines", 3)
-        self.cmdStart: str = kwargs.pop("cmdStart", "#")
-        self.cmdEnd: str = kwargs.pop("cmdEnd", ";")
-
-        self.T0 = perf_counter_ns()
+        self.tareValue: float = float(self.ui.setGaugeValue.value())
+        self.loadPerCount: float = float(self.ui.setNewtonPerCount.value())
 
         self.PortName: str = self.ui.setPortName.text().upper()
 
-        ####### PORT INIT ######
-        # The 'COM'-port depends on which plug is used at the back of the computer.
-        # To find the correct port: go to Windows Settings, Search for Device Manager,
-        # and click the tab "Ports (COM&LPT)".
         try:
             self.ser.setPort(self.PortName)
             self.ser.open()
@@ -1328,24 +1335,6 @@ class ForceSensorGUI(QObject, QRunnable):
             self.ui.errorMessage = [
                 e.__class__.__name__, e.args[0]+"\n\nCheck if Port is not already in use."]
             self.errorSignal.emit()
-
-    def ForceFix(self, x: float) -> float:
-        """
-        Calculates the force based on `self.GaugeValue` and self.`NewtonPerCount`
-
-        :param x: input value/ measured count
-        :type x: float
-        :returns: calculated force
-        :rtype: float
-        """
-        # The output, with gauge, in mN
-        return (x - self.GaugeValue) * self.NewtonPerCount
-
-    def ClosePort(self) -> None:
-        """
-        Always close after use.
-        """
-        self.ser.close()
 
 
 class ErrorInterface(QtWidgets.QDialog):
