@@ -147,6 +147,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # TODO: add screen for movement options and movement cycles.
         # ^ Might never update this one ^
         self.ui.butSwapPositions.setEnabled(True)
+        self.ui.yLabel.setText("Force [mN]")
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -333,9 +334,13 @@ class UserInterface(QtWidgets.QMainWindow):
                 labelLoc="bottom", 
                 labelTxt="Displacement [mm]"
                 )
-    
+        self.ui.graph1.clear()
+        self.updatePlot()
+
     def switchPlotIndexY(self, index: int) -> None:
         self.plotIndexY = index
+        self.ui.graph1.clear()
+        self.updatePlot()
 
     def switchToTime(self) -> None:
         self.switchPlotIndexX(0)
