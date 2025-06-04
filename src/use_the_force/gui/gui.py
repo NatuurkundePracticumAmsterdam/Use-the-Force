@@ -148,6 +148,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # ^ Might never update this one ^
         self.ui.butSwapPositions.setEnabled(True)
         self.ui.yLabel.setText("Force [mN]")
+        self.ui.butHome.setEnabled(False)
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
