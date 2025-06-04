@@ -1155,8 +1155,11 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butSingleRead,
                 self.ui.butSwitchManual
             )
-
-        self.sensor.cmds.ST()
+        try:
+            self.sensor.cmds.ST()
+        except RuntimeError as error:
+            self.ui.errorMessage([error.__class__, error.__class__, error.__cause__])
+            self.error()
 
     def butDisplayTare(self) -> None:
         self.sensor.cmds.TR()
