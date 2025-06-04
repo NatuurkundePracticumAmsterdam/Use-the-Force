@@ -135,6 +135,10 @@ class Commands():
 
         self.minPos: int = 1
         self.maxPos: int = 46
+
+        self.verMajor:int = 0
+        self.verMinor:int = 0
+        self.verPatch:int = 0
     
     def __call__(self, serialConnection: serial.Serial) -> None:
         """Change serial connection
@@ -391,6 +395,7 @@ class Commands():
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
         else:
+            self.verMajor, self.verMinor, self.verPatch = map(int, returnLine.split(": ")[-1].split("."))
             return returnLine
     
     #######################
