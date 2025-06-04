@@ -183,7 +183,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSingleRead,
             self.ui.setUnitDisplay,
             self.ui.butTareDisplay,
-            self.ui.setForceApplied
+            self.ui.setForceApplied,
+            self.ui.butHome
         )
         self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor")
 
