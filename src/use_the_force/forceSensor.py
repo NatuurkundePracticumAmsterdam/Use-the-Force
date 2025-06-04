@@ -150,6 +150,9 @@ class Commands():
 
     def customCmd(self, cmd: str, *args) -> str:
         """Custom command
+        
+        Sends a self written command to the sensor.
+        For general use, this command should not be used, as it is not guaranteed to work with the firmware.
 
         :param cmd: command to send
         :type cmd: str
@@ -170,7 +173,10 @@ class Commands():
         self.serialConnection.write(cmdStr.encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
-        return self.serialConnection.read_until().decode().strip()
+        returnLine: str = self.serialConnection.read_until().decode().strip()
+        if returnLine.split(":")[0] == "[ERROR]":
+            raise RuntimeError(returnLine)
+        return returnLine
     
     ########################
     # 0 Arguments Commands #
@@ -191,7 +197,7 @@ class Commands():
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
     
-    def CM(self) -> None:
+    def CM(self) -> str:
         """
         ### Count Maximum
         
@@ -201,6 +207,9 @@ class Commands():
         This count is saved on the sensor.
         
         :raises RunTimeError: If sensor encounters an error.
+
+        :returns: Returnline from sensor
+        :rtype: str
         """
         self.serialConnection.flush()
         self.serialConnection.write(f"{self.cmdStart}CM{self.cmdEnd}".encode())
@@ -209,8 +218,9 @@ class Commands():
         returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
+        return returnLine
     
-    def CZ(self) -> None:
+    def CZ(self) -> str:
         """
         ### Count Zero
         
@@ -220,6 +230,9 @@ class Commands():
         This count is saved on the sensor. 
         
         :raises RunTimeError: If sensor encounters an error.
+
+        :returns: Returnline from sensor
+        :rtype: str
         """
         self.serialConnection.flush()
         self.serialConnection.write(f"{self.cmdStart}CZ{self.cmdEnd}".encode())
@@ -228,6 +241,7 @@ class Commands():
         returnLine: str = self.serialConnection.read_until().decode().strip()
         if returnLine.split(":")[0] == "[ERROR]":
             raise RuntimeError(returnLine)
+        return returnLine
 
     def GP(self) -> int:
         """
