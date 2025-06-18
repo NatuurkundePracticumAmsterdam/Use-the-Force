@@ -86,7 +86,7 @@ class UserInterface(QtWidgets.QMainWindow):
         ###################
         # INITIALIZE VARS #
         ###################
-        self.butConnectToggle: bool = False
+        self.sensorConnected: bool = False
         self.threadReachedEnd = False
         self.recording: bool = False
         self.fileGraphOpen: bool = False
@@ -168,7 +168,7 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         self.ui.butConnect.setText("Connect")
         self.ui.butConnect.setChecked(False)
-        self.butConnectToggle = False
+        self.sensorConnected = False
         self.homed = False
         self.enableElement(
             self.ui.butConnect,
@@ -224,7 +224,7 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         if self.recording:
             self.recording = False
-        if self.butConnectToggle:
+        if self.sensorConnected:
             self.butConnect()
         if not (self.fileOpen or self.MDMActive) and len(self.data[0])>0:
             self.ui.errorMessage = [
@@ -408,8 +408,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setEnabled(False)
 
         # Disconnect
-        if self.butConnectToggle:
-            self.butConnectToggle = False
+        if self.sensorConnected:
+            self.sensorConnected = False
 
             self.startsensorDisonnect = threading.Thread(
                 target=self.sensorDisconnect)
@@ -421,7 +421,7 @@ class UserInterface(QtWidgets.QMainWindow):
             devices: list[str] = [
                 port.device for port in list_ports.comports()]
             if self.ui.setPortName.text().upper() in devices:
-                self.butConnectToggle = True
+                self.sensorConnected = True
                 self.ui.butFile.setEnabled(False)
                 self.startsensorConnect = threading.Thread(
                     target=self.sensorConnect)
@@ -641,7 +641,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.graphMDM2.clear()
         else:
             self.ui.graph1.clear()
-        if hasattr(self.sensor, "ser"):
+        if self.sensorConnected:
             self.sensor.ser.reset_input_buffer()
         self.ui.butSave.setEnabled(False)
         if self.fileOpen:
@@ -917,7 +917,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.graphOptions,
                 self.ui.butClear
             )
-            if self.butConnectToggle and self.homed:
+            if self.sensorConnected and self.homed:
                 self.enableElement(self.ui.butRecord)
 
             # MDM
@@ -1046,7 +1046,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.butFileMDM.setText(
                     *self.filePath.split("/")[-1].split(".")[:-1])
                 self.ui.butSwitchManual.setEnabled(False)
-                if self.butConnectToggle:
+                if self.sensorConnected:
                     self.ui.butReadForceMDM.setEnabled(True)
             else:
                 self.ui.butFileMDM.setText("-")
@@ -1170,7 +1170,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.cmds.SF(float(self.ui.setForceApplied.value()))
 
     def updateUnitDisplay(self) -> None:
-        if self.butConnectToggle:
+        if self.sensorConnected:
             self.sensor.cmds.UU(str(self.ui.setUnitDisplay.text()))
 
     def swapPositions(self) -> None:
