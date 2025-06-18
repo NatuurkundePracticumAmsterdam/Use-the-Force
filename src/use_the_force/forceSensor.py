@@ -63,7 +63,7 @@ class ForceSensor():
             self.ser.setPort(self.PortName)
             self.ser.open()
     
-    def tare(self, reads: int = 10, skips: int = 3) -> int:
+    def tare(self, reads: int = 30, skips: int = 3) -> int:
         """
         Updates and returns the tare value by taking the average of `reads` reads.
         
