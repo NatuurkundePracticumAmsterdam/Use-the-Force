@@ -668,12 +668,6 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         self.ui.butReGauge.setChecked(True)
 
-        i=3
-        while i > 0:
-            self.ui.butReGauge.setText(f"Taring in {i}")
-            sleep(1)
-            i -= 1
-
         self.ui.butReGauge.setText("...")
         GaugeValue = self.sensor.tare()
         self.ui.setGaugeValue.setValue(GaugeValue)
