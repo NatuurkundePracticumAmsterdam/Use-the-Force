@@ -76,6 +76,7 @@ class ForceSensor():
         :rtype: int
         """
         self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
         skips: list[float] = [self.cmds.SR() for _ in range(skips)]
         read_values: list[float] = [self.cmds.SR() for _ in range(reads)]
         self.tareValue = round(sum(read_values)/reads, self.tareRound)
@@ -307,6 +308,8 @@ class Commands():
         :raises RunTimeError: If sensor encounters an error.
         """
         self.serialConnection.flush()
+        self.serialConnection.reset_input_buffer()
+        self.serialConnection.reset_output_buffer()
         self.serialConnection.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
