@@ -447,17 +447,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor()
         if self.sensor.failed:
             self.sensor.failed = False
-
-        try:
-            self.ui.butConnect.setText("Connecting...")
-            self.sensor()
-            if self.sensor.failed:
-                raise ConnectionError("Sensor connection failed")
-
-        except Exception as e:
-            self.resetConnectUI() 
-            self.ui.errorMessage = [e.__class__.__name__, e.__class__.__name__, str(e)]
-            self.error()
+            self.resetConnectUI()
             return
 
         # needs time or it will break
@@ -465,14 +455,17 @@ class UserInterface(QtWidgets.QMainWindow):
         try:
             vr = self.sensor.cmds.VR()
             if vr == '':
-                raise ConnectionError("[ERROR]: Returned empty string.")
+                raise RuntimeError("[ERROR]: Returned empty string.")
             else:
                 self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor v:"+vr.split(":")[1][1:])
-
-        except Exception as e:
+        except RuntimeError as e:
             self.sensor.ClosePort()
-            self.resetConnectUI() 
-            self.ui.errorMessage = [e.__class__.__name__, e.__class__.__name__, str(e)]
+            self.resetConnectUI()
+            self.ui.errorMessage = [
+                                    "Connection Error", 
+                                    "Connection Error", 
+                                    "[ERROR]: Retrieved no data."
+                                ]
             self.error()
             return
 
@@ -1081,6 +1074,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.loadPerCount = self.ui.setNewtonPerCount.value()
 
     def butMove(self) -> None:
+        """Handles move button press"""
         self.sensor.cmds.SP(self.ui.setPosition.value())
 
     def butUpdateVelocity(self) -> None:
