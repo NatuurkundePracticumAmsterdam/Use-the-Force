@@ -3,12 +3,11 @@ from time import perf_counter_ns, sleep
 
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot, Qt
-from PySide6.QtGui import QCloseEvent, QTextBlockFormat, QResizeEvent
+from PySide6.QtGui import QCloseEvent
 import pyqtgraph as pg
 
 import threading
 import bisect
-import serial
 from serial.tools import list_ports  # type: ignore
 import re
 
