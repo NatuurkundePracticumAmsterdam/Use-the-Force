@@ -149,6 +149,14 @@ class Commands():
         """
         self.serialConnection = serialConnection
 
+    def _clearBuffer(self) -> None:
+        """
+        Clears the serial buffer.
+        """
+        self.serialConnection.flush()
+        self.serialConnection.reset_input_buffer()
+        self.serialConnection.reset_output_buffer()
+
     def customCmd(self, cmd: str, *args) -> str:
         """Custom command
         
@@ -190,7 +198,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}AB{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -212,7 +220,7 @@ class Commands():
         :returns: Returnline from sensor
         :rtype: str
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}CM{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -235,7 +243,7 @@ class Commands():
         :returns: Returnline from sensor
         :rtype: str
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}CZ{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -254,7 +262,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}GP{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -277,7 +285,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}GV{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -306,9 +314,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
-        self.serialConnection.reset_input_buffer()
-        self.serialConnection.reset_output_buffer()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}HM{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -327,7 +333,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}ID{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -347,7 +353,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}SR{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -367,7 +373,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}ST{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -384,7 +390,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}TR{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -403,7 +409,7 @@ class Commands():
         
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}VR{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -428,7 +434,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         if not enable:
             self.serialConnection.write(f"{self.cmdStart}DC false{self.cmdEnd}".encode())
         else:
@@ -450,7 +456,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(
             f"{self.cmdStart}SF {calibrationForce}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
@@ -470,6 +476,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
+        self._clearBuffer()
         if position <= self.maxPos and position >= self.minPos:
             self.serialConnection.flush()
             self.serialConnection.write(f"{self.cmdStart}SP{position}{self.cmdEnd}".encode())
@@ -491,7 +498,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(f"{self.cmdStart}SV{velocity}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
             sleep(self.stdDelay)
@@ -510,7 +517,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(
             f"{self.cmdStart}UL{lineHeight}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
@@ -530,7 +537,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(
             f"{self.cmdStart}UU{unit}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
@@ -550,7 +557,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(
             f"{self.cmdStart}UX{xOffset}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
@@ -570,7 +577,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(
             f"{self.cmdStart}UY{yOffset}{self.cmdEnd}".encode())
         if self.stdDelay > 0:
@@ -598,7 +605,7 @@ class Commands():
 
         :raises RunTimeError: If sensor encounters an error.
         """
-        self.serialConnection.flush()
+        self._clearBuffer()
         self.serialConnection.write(
             f"{self.cmdStart}CR {nReads}{self.cmdArgSep}{iReads}{self.cmdEnd}".encode())
         sleep(self.stdDelay + iReads/1000)
