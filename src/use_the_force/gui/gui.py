@@ -225,7 +225,7 @@ class UserInterface(QtWidgets.QMainWindow):
         if not (self.fileOpen or self.MDMActive) and len(self.data[0])>0:
             self.ui.errorMessage = [
                 "Unsaved Data", "Unsaved Data!", "You have unsaved data, quit anyways?"]
-            if self.error() == 0: # 0 = Cancel
+            if not self.error(): # Cancel
                 event.ignore()
                 self.butSave()
 
@@ -490,7 +490,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot(str, str, str)
     @Slot(str, str, None)
-    def error(self) -> int:
+    def error(self) -> bool:
         """
         Launches the error dialog.
 
@@ -499,8 +499,8 @@ class UserInterface(QtWidgets.QMainWindow):
         :param errorText: text why the error occured
         :type errorText: str
 
-        :returns: Result of dialogue (button pressed), 1 for OK, 0 for Cancel
-        :rtype: int
+        :returns: Result of dialogue (button pressed), `True` for OK, `False` for Cancel
+        :rtype: bool
         """
         if len(self.ui.errorMessage) == 3:
             if self.ui.errorMessage[2] == "[ERROR]: movement aborted, home to unlock":
@@ -521,7 +521,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 )
             
 
-        return self.error_ui(*self.ui.errorMessage)
+        return bool(self.error_ui(*self.ui.errorMessage))
 
     def butFile(self) -> None:
         """
@@ -586,7 +586,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 if not self.fileOpen:
                     self.ui.errorMessage = [
                         "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you wish to continue?"]
-                    if self.error() == 0: # 0 = Cancel
+                    if not self.error(): # Cancel
                         self.butSave()
                         return
                 self.butClear()
@@ -1082,7 +1082,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
     def butHome(self) -> None:
         self.ui.errorMessage = ["Home Warning", "Home Warning", "Make sure nothing is obstructing the path downwards.<br>The motor will not stop during homing!"]
-        if self.error()==1:
+        if self.error():
             self.butUpdateVelocity()
             self.sensor.cmds.HM()
             self.homed = True
