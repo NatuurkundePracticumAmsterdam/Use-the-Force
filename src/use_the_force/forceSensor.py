@@ -294,7 +294,6 @@ class Commands():
         Help command internally, not implemented here.
         
         :raises NotImplementedError: Not Implemented
-        :raises RunTimeError: If sensor encounters an error.
         """
         raise NotImplementedError
     
