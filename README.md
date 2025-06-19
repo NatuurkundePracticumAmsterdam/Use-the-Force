@@ -9,8 +9,8 @@
 Python package for physics practicum at Vrije Universiteit Amsterdam.
 
 ## Features
-Allows for communication with the M5Din Meter given in the practicum.
-Gives a GUI that includes various settings when using the M5Din Meter.
+Allows for communication with the M5Din Meter that is used within the practicum.\
+Comes bundled with a GUI, that includes various settings when using the M5Din Meter.
 
 ## Using the GUI
 The GUI can be called upon with the `start()` function in `use_the_force.gui`. 
@@ -30,10 +30,10 @@ sys.exit(ret)
 
 ## Additional Info
 #### Motorstage speed:
-`SV(100)` = 1 + 2/3 mm/s\
-`SV(100)` ~ 1.666... mm/s\
-`SV(60)` = 1 mm/s\
-`SV(30)` = 0.5 mm/s
+`SV(120)` = 2 mm/s\
+`SV(60)` = 1 mm/s
+
+Range: `[1,120]`
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
