@@ -718,8 +718,7 @@ class UserInterface(QtWidgets.QMainWindow):
             if self.fileMDMOpen:
                 self.enableElement(self.ui.butReadForceMDM)
             if self.singleReadToggle:
-                self.ui.butSingleRead.setText(
-                    "{:.5f}".format(self.singleReadForce))
+                self.ui.SRCount.setText("{:.5f}".format(self.singleReadForce))
                 self.singleReadToggle = False
             else:
                 if self.readForceMDMToggle:
@@ -776,8 +775,7 @@ class UserInterface(QtWidgets.QMainWindow):
                     [self.data[0][-1], self.data[1][-1], self.data[2][-1]])
                 self.updatePlotMDM()
         else:
-            self.ui.butSingleRead.setText(
-                "{:.5f}".format(self.singleReadForce))
+            self.ui.SRCount.setText("{:.5f}".format(self.singleReadForce))
             if self.homed:
                 self.ui.butRecord.setEnabled(True)
             self.singleReadToggle = False

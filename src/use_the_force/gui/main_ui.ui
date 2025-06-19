@@ -366,8 +366,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>118</width>
-         <height>259</height>
+         <width>100</width>
+         <height>30</height>
         </rect>
        </property>
        <attribute name="label">
@@ -601,8 +601,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>118</width>
-         <height>259</height>
+         <width>100</width>
+         <height>30</height>
         </rect>
        </property>
        <attribute name="label">
@@ -765,8 +765,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>118</width>
-         <height>259</height>
+         <width>100</width>
+         <height>30</height>
         </rect>
        </property>
        <attribute name="label">
@@ -1006,7 +1006,7 @@
      <property name="geometry">
       <rect>
        <x>1</x>
-       <y>195</y>
+       <y>255</y>
        <width>118</width>
        <height>24</height>
       </rect>
@@ -1088,49 +1088,7 @@ Displacement Mode</string>
       <string>Home</string>
      </property>
     </widget>
-    <widget class="QLabel" name="SRCountLab">
-     <property name="geometry">
-      <rect>
-       <x>1</x>
-       <y>219</y>
-       <width>118</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Count</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="SRLoadLab">
-     <property name="geometry">
-      <rect>
-       <x>1</x>
-       <y>259</y>
-       <width>118</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Load</string>
-     </property>
-    </widget>
     <widget class="QLineEdit" name="SRCount">
-     <property name="geometry">
-      <rect>
-       <x>1</x>
-       <y>239</y>
-       <width>118</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>0</string>
-     </property>
-     <property name="readOnly">
-      <bool>true</bool>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="SRLoad">
      <property name="geometry">
       <rect>
        <x>1</x>
@@ -1143,7 +1101,7 @@ Displacement Mode</string>
       <string>0</string>
      </property>
      <property name="readOnly">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
     </widget>
    </widget>
