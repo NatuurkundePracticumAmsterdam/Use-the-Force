@@ -169,34 +169,6 @@
          <bool>false</bool>
         </property>
        </widget>
-       <widget class="QDoubleSpinBox" name="setGaugeValue">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>1</x>
-          <y>59</y>
-          <width>113</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="decimals">
-         <number>12</number>
-        </property>
-        <property name="minimum">
-         <double>-9999999999999999635896294965248.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>9999999999999999455752309870428160.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>0.000001000000000</double>
-        </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
-        </property>
-       </widget>
        <widget class="QDoubleSpinBox" name="setNewtonPerCount">
         <property name="enabled">
          <bool>false</bool>
@@ -360,14 +332,33 @@
          </property>
         </widget>
        </widget>
+       <widget class="QSpinBox" name="setGaugeValue">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>59</y>
+          <width>113</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>-999999999</number>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="moveOptions">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>100</width>
-         <height>30</height>
+         <width>98</width>
+         <height>28</height>
         </rect>
        </property>
        <attribute name="label">
@@ -601,8 +592,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>100</width>
-         <height>30</height>
+         <width>98</width>
+         <height>28</height>
         </rect>
        </property>
        <attribute name="label">
@@ -765,8 +756,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>100</width>
-         <height>30</height>
+         <width>98</width>
+         <height>28</height>
         </rect>
        </property>
        <attribute name="label">
