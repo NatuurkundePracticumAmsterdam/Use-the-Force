@@ -1,33 +1,36 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: use_the_force
 Version: 0.1.0
 Summary: Code for practicum Use the Force at Vrije Universteit Amsterdam.
-Project-URL: Homepage, https://github.com/Pieter-VU/Practicum-Use-the-Force
-Project-URL: Issues, https://github.com/Pieter-VU/Practicum-Use-the-Force/issues
+Project-URL: Homepage, https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force
+Project-URL: Issues, https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: numpy
 Requires-Dist: matplotlib
 Requires-Dist: pyserial
 Requires-Dist: PySide6
 Requires-Dist: pyqtgraph
+Dynamic: license-file
 
 ﻿# Use the Force
-[![GitHub license](https://img.shields.io/badge/license-MIT-purple.svg)](https://github.com/Pieter-VU/Practicum-Use-the-Force/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/NatuurkundePracticumAmsterdam/Use-the-Force
+)](LICENSE)
+[![PyPI - Version](https://img.shields.io/pypi/v/use_the_force)
+](https://pypi.org/project/use_the_force/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/use_the_force)](https://pypi.org/project/use_the_force/)
 
-Subfolder use_the_force is a python package that can be imported into Python. (In the future)
 
-Run `main.py` to activate the GUI.
+Python package for physics practicum at Vrije Universiteit Amsterdam.
 
 ## Features
 Allows for communication with the M5Din Meter given in the practicum.
 Gives a GUI that includes various settings when using the M5Din Meter.
 
 ## Using the GUI
-The GUI can be called upon with the `main()` function in `use_the_force.gui`. 
+The GUI can be called upon with the `start()` function in `use_the_force.gui`. 
 
-Or by rewriting the `main()` function yourself:
+Or by rewriting the `start()` function yourself:
 ```py
 import sys
 from PySide6 import QtWidgets
@@ -39,6 +42,13 @@ ui.show()
 ret = app.exec_()
 sys.exit(ret)
 ```
+
+## Additional Info
+#### Motorstage speed:
+`SV(100)` = 1 + 2/3 mm/s\
+`SV(100)` ~ 1.666... mm/s\
+`SV(60)` = 1 mm/s\
+`SV(30)` = 0.5 mm/s
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
