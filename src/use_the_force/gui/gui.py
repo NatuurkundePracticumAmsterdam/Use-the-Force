@@ -2,7 +2,7 @@ import sys
 from time import perf_counter_ns, sleep
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Signal, Slot, Qt
+from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Slot, Qt
 from PySide6.QtGui import QCloseEvent
 import pyqtgraph as pg
 
@@ -13,7 +13,7 @@ import re
 
 from .main_ui import Ui_MainWindow
 from .error_ui import Ui_errorWindow
-from ..forceSensor import Commands,ForceSensor
+from ..forceSensor import Commands, ForceSensor
 from ..logging import Logging
 
 __all__ = [
@@ -41,24 +41,31 @@ class UserInterface(QtWidgets.QMainWindow):
         ###########
         # BUTTONS #
         ###########
-        self.ui.butConnect.pressed.connect(self.butConnect)
-        self.ui.butFile.pressed.connect(self.butFile)
-        self.ui.butTare.pressed.connect(self.butTare)
-        self.ui.butRecord.pressed.connect(self.butRecord)
-        self.ui.butClear.pressed.connect(self.butClear)
-        self.ui.butSave.pressed.connect(self.butSave)
-        self.ui.butSingleRead.pressed.connect(self.butSingleRead)
-        self.ui.butSwitchManual.pressed.connect(self.butSwitchMDM)
-        self.ui.butFileMDM.pressed.connect(self.butFileMDM)
-        self.ui.butReadForceMDM.pressed.connect(self.readForceMDM)
-        self.ui.butSwitchDirectionMDM.pressed.connect(self.switchDirectionMDM)
-        self.ui.butDeletePreviousMDM.pressed.connect(self.butDeletePreviousMDM)
-        self.ui.butMove.pressed.connect(self.butMove)
-        self.ui.butUpdateVelocity.pressed.connect(self.butUpdateVelocity)
-        self.ui.butHome.pressed.connect(self.butHome)
-        self.ui.butForceStop.pressed.connect(self.butForceStop)
-        self.ui.butTareDisplay.pressed.connect(self.butDisplayTare)
-        self.ui.butSwapPositions.pressed.connect(self.swapPositions)
+        # Button event mapping
+        self.button_handlers = {
+            self.ui.butConnect: self.butConnect,
+            self.ui.butFile: self.butFile,
+            self.ui.butTare: self.butTare,
+            self.ui.butRecord: self.butRecord,
+            self.ui.butClear: self.butClear,
+            self.ui.butSave: self.butSave,
+            self.ui.butSingleRead: self.butSingleRead,
+            self.ui.butSwitchManual: self.butSwitchMDM,
+            self.ui.butFileMDM: self.butFileMDM,
+            self.ui.butReadForceMDM: self.readForceMDM,
+            self.ui.butSwitchDirectionMDM: self.switchDirectionMDM,
+            self.ui.butDeletePreviousMDM: self.butDeletePreviousMDM,
+            self.ui.butMove: self.butMove,
+            self.ui.butUpdateVelocity: self.butUpdateVelocity,
+            self.ui.butHome: self.butHome,
+            self.ui.butForceStop: self.butForceStop,
+            self.ui.butTareDisplay: self.butDisplayTare,
+            self.ui.butSwapPositions: self.swapPositions
+        }
+        
+        # Connect all buttons
+        for button, handler in self.button_handlers.items():
+            button.pressed.connect(handler)
 
         # Text boxes and value boxes
         self.ui.setNewtonPerCount.valueChanged.connect(self.setLoadPerCount)
@@ -404,7 +411,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.sensorConnected = False
 
             self.startsensorDisonnect = threading.Thread(
-                target=self.sensorDisconnect)
+                target=self.sensorDisconnect, name="sensorDisconnect")
             self.startsensorDisonnect.start()
             self.ui.setPortName.setEnabled(True)
 
@@ -416,7 +423,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.sensorConnected = True
                 self.ui.butFile.setEnabled(False)
                 self.startsensorConnect = threading.Thread(
-                    target=self.sensorConnect)
+                    target=self.sensorConnect, name="sensorConnect")
                 self.startsensorConnect.start()
             else:
                 if len(devices) > 0:
@@ -440,7 +447,17 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor()
         if self.sensor.failed:
             self.sensor.failed = False
-            self.resetConnectUI()
+
+        try:
+            self.ui.butConnect.setText("Connecting...")
+            self.sensor()
+            if self.sensor.failed:
+                raise ConnectionError("Sensor connection failed")
+
+        except Exception as e:
+            self.resetConnectUI() 
+            self.ui.errorMessage = [e.__class__.__name__, e.__class__.__name__, str(e)]
+            self.error()
             return
 
         # needs time or it will break
@@ -448,17 +465,14 @@ class UserInterface(QtWidgets.QMainWindow):
         try:
             vr = self.sensor.cmds.VR()
             if vr == '':
-                raise RuntimeError("[ERROR]: Returned empty string.")
+                raise ConnectionError("[ERROR]: Returned empty string.")
             else:
                 self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor v:"+vr.split(":")[1][1:])
-        except RuntimeError as e:
+
+        except Exception as e:
             self.sensor.ClosePort()
-            self.resetConnectUI()
-            self.ui.errorMessage = [
-                                    "Connection Error", 
-                                    "Connection Error", 
-                                    "[ERROR]: Retrieved no data."
-                                ]
+            self.resetConnectUI() 
+            self.ui.errorMessage = [e.__class__.__name__, e.__class__.__name__, str(e)]
             self.error()
             return
 
@@ -608,19 +622,14 @@ class UserInterface(QtWidgets.QMainWindow):
             )
 
             self.sensor.ser.reset_input_buffer()
-            
 
-            if self.ui.setStartPos.value() == self.ui.setEndPos.value() and self.plotIndexX!=0 and self.ui.setTime.value()>0:
+            if self.ui.setStartPos.value() == self.ui.setEndPos.value() and self.plotIndexX != 0 and self.ui.setTime.value() > 0:
                 self.switchPlotIndexX(0)
-            elif self.plotIndexX!=1:
+            elif self.plotIndexX != 1:
                 self.switchPlotIndexX(1)
 
-            if self.ui.butFile.text() != "-":
-                self.mainLogWorker.logLess = False
-                self.thread_pool.start(self.mainLogWorker.run)
-            else:
-                self.mainLogWorker.logLess = True
-                self.thread_pool.start(self.mainLogWorker.run)
+            self.mainLogWorker.logLess = (self.ui.butFile.text() == "-")
+            self.thread_pool.start(self.mainLogWorker.run)
 
     def butClear(self) -> None:
         """
@@ -651,7 +660,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butRecord,
             self.ui.butSingleRead
         )
-        th = threading.Thread(target=self.butTareActive)
+        th = threading.Thread(target=self.butTareActive, name="tareActive")
         th.start()
 
     def butTareActive(self) -> None:
