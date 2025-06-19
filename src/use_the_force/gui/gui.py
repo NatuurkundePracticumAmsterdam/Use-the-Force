@@ -44,7 +44,7 @@ class UserInterface(QtWidgets.QMainWindow):
         ###########
         self.ui.butConnect.pressed.connect(self.butConnect)
         self.ui.butFile.pressed.connect(self.butFile)
-        self.ui.butReGauge.pressed.connect(self.butTare)
+        self.ui.butTare.pressed.connect(self.butTare)
         self.ui.butRecord.pressed.connect(self.butRecord)
         self.ui.butClear.pressed.connect(self.butClear)
         self.ui.butSave.pressed.connect(self.butSave)
@@ -63,7 +63,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # Text boxes and value boxes
         self.ui.setNewtonPerCount.valueChanged.connect(self.setLoadPerCount)
-        self.ui.setPlotTimerInterval.textEdited.connect(
+        self.ui.setPlotTimerInterval.valueChanged.connect(
             self.updatePlotTimerInterval)
         self.ui.setLineReads.valueChanged.connect(
             self.singleReadLinesForcesUpdate)
@@ -146,9 +146,6 @@ class UserInterface(QtWidgets.QMainWindow):
         ############################
         # TODO: add screen for movement options and movement cycles.
         # ^ Might never update this one ^
-        self.ui.butSwapPositions.setEnabled(True)
-        self.ui.yLabel.setText("Force [mN]")
-        self.ui.butHome.setEnabled(False)
 
     def enableElement(self, *elements: QtWidgets.QWidget) -> None:
         """
@@ -179,7 +176,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setNewtonPerCount,
             self.ui.setGaugeValue,
             self.ui.butRecord,
-            self.ui.butReGauge,
+            self.ui.butTare,
             self.ui.butSingleRead,
             self.ui.setUnitDisplay,
             self.ui.butTareDisplay,
@@ -195,7 +192,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.butConnect.setText("Connected")
         self.ui.butConnect.setChecked(True)
         self.enableElement(
-            self.ui.butReGauge,
+            self.ui.butTare,
             self.ui.butSingleRead,
             self.ui.setNewtonPerCount,
             self.ui.setGaugeValue,
@@ -286,9 +283,6 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.ui.yLabel.textChanged.connect(self.updatePlotYLabel)
 
-        self.ui.xLimSlider.sliderMoved.connect(self.xLimSlider)
-        self.ui.xLimSet.textChanged.connect(self.xLimSet)
-
         self.ui.graph1.setTitle(self.ui.title.text(), color=(255, 255, 255))
         self.ui.title.textChanged.connect(self.updatePlotTitle)
 
@@ -301,10 +295,9 @@ class UserInterface(QtWidgets.QMainWindow):
         )
 
         if len(self.data[self.plotIndexX]) > 0:
-            self.ui.xLimSlider.setMinimum(-1*(int(self.data[self.plotIndexX][-1])+1))
             try:
-                self.xLim = float(self.ui.xLimSet.text())
-                if -1*self.xLim < self.data[self.plotIndexX][-1] and (self.xLim != float(0)):
+                self.xLim = int(self.ui.xLimSet.value())
+                if abs(self.xLim) < self.data[self.plotIndexX][-1] and (self.xLim != 0):
                     self.ui.graph1.setXRange(
                         self.data[self.plotIndexX][-1]+self.xLim, self.data[self.plotIndexX][-1])
                     i = bisect.bisect_left(
@@ -312,7 +305,7 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.graph1.setYRange(
                         min(self.data[self.plotIndexY][i:]), max(self.data[self.plotIndexY][i:]))
 
-                elif self.xLim == float(0):
+                elif self.xLim == 0:
                     self.ui.graph1.setXRange(0, self.data[self.plotIndexX][-1])
                     self.ui.graph1.setYRange(
                         min(self.data[self.plotIndexY]), max(self.data[self.plotIndexY]))
@@ -368,7 +361,7 @@ class UserInterface(QtWidgets.QMainWindow):
                              labelLoc="left", labelTxt=self.ui.yLabel.text())
 
     def updatePlotTimerInterval(self) -> None:
-        tmp = self.ui.setPlotTimerInterval.text()
+        tmp = self.ui.setPlotTimerInterval.value()
         try:
             tmp = int(tmp)
             if tmp > 0:
@@ -578,7 +571,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.enableElement(
                 self.ui.butClear,
                 self.ui.butFile,
-                self.ui.butReGauge,
+                self.ui.butTare,
                 self.ui.butSave,
                 self.ui.butSingleRead,
                 self.ui.butSwitchManual,
@@ -607,7 +600,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.disableElement(
                 self.ui.butClear,
                 self.ui.butFile,
-                self.ui.butReGauge,
+                self.ui.butTare,
                 self.ui.butSave,
                 self.ui.butSingleRead,
                 self.ui.butSwitchManual,
@@ -654,7 +647,7 @@ class UserInterface(QtWidgets.QMainWindow):
         starts a thread to count down, end of thread re-enables button
         """
         self.disableElement(
-            self.ui.butReGauge,
+            self.ui.butTare,
             self.ui.butConnect,
             self.ui.butRecord,
             self.ui.butSingleRead
@@ -666,22 +659,22 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         the actual Tare script
         """
-        self.ui.butReGauge.setChecked(True)
+        self.ui.butTare.setChecked(True)
 
-        self.ui.butReGauge.setText("...")
+        self.ui.butTare.setText("...")
         GaugeValue = self.sensor.tare()
         self.ui.setGaugeValue.setValue(GaugeValue)
         self.sensor.tareValue = GaugeValue
-        self.ui.butReGauge.setText("Tare")
+        self.ui.butTare.setText("Tare")
 
         if (not self.MDMActive) and self.homed:
             self.enableElement(self.ui.butRecord)
         self.enableElement(
-            self.ui.butReGauge,
+            self.ui.butTare,
             self.ui.butConnect,
             self.ui.butSingleRead
         )
-        self.ui.butReGauge.setChecked(False)
+        self.ui.butTare.setChecked(False)
 
     def butSave(self) -> None:
         """
@@ -716,7 +709,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butSingleRead,
             self.ui.butRecord,
             self.ui.butConnect,
-            self.ui.butReGauge
+            self.ui.butTare
         )
         self.thread_pool.start(self.mainLogWorker.singleRead)
 
@@ -792,7 +785,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.enableElement(
             self.ui.butSingleRead,
-            self.ui.butReGauge,
+            self.ui.butTare,
             self.ui.butConnect
         )
 
@@ -800,30 +793,21 @@ class UserInterface(QtWidgets.QMainWindow):
         """
         Changes the value of singleReadSkips when textbox is changed
         """
-        try:
-            self.singleReadSkips = int(self.ui.setLineSkips.text())
-        except ValueError:
-            pass
+        self.singleReadSkips = self.ui.setLineSkips.value()
 
     def singleReadLinesForcesUpdate(self) -> None:
         """
         Changes the value of singleReadForces when textbox is changed
         """
-        try:
-            self.singleReadForces = int(self.ui.setLineReads.text())
-        except ValueError:
-            pass
+        self.singleReadForces = self.ui.setLineReads.value()
 
     def singleReadStepUpdate(self) -> None:
         """
         Changes the value of stepSizeMDM when textbox is changed
         """
-        try:
-            self.stepSizeMDM = float(self.ui.setStepSizeMDM.text())
-            if self.switchDirectionMDMToggle:
-                self.stepSizeMDM = -1*self.stepSizeMDM
-        except ValueError:
-            pass
+        self.stepSizeMDM = self.ui.setStepSizeMDM.value()
+        if self.switchDirectionMDMToggle:
+            self.stepSizeMDM = -1*self.stepSizeMDM
 
     def readForceMDM(self) -> None:
         self.disableElement(
@@ -1082,38 +1066,13 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.updatePlotMDM()
 
-    def xLimSlider(self) -> None:
-        """
-        Changes lineEdit text based on slider position
-        """
-        self.ui.xLimSet.setText(str(self.ui.xLimSlider.value()))
-
-    def xLimSet(self) -> None:
-        """
-        Changes slider position
-        """
-        try:
-            val = int(self.ui.xLimSet.text())
-            if not val > 0:
-                self.ui.xLimSlider.setValue(val)
-            elif val < self.ui.xLimSlider.minimum():
-                self.ui.xLimSlider.setValue(self.ui.xLimSlider.minimum())
-            else:
-                self.ui.xLimSlider.setValue(0)
-        except:
-            pass
-
     def setLoadPerCount(self) -> None:
         """
         Changes the value of LoadPerCount when textbox is changed
 
         Allows for changing the value while still getting live data
         """
-        try:
-            self.sensor.loadPerCount = float(
-                self.ui.setNewtonPerCount.value())
-        except:
-            pass
+        self.sensor.loadPerCount = self.ui.setNewtonPerCount.value()
 
     def butMove(self) -> None:
         self.sensor.cmds.SP(self.ui.setPosition.value())
@@ -1146,7 +1105,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.enableElement(
                 self.ui.butClear,
                 self.ui.butFile,
-                self.ui.butReGauge,
+                self.ui.butTare,
                 self.ui.butSave,
                 self.ui.butSingleRead,
                 self.ui.butSwitchManual
