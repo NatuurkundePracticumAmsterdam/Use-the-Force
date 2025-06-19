@@ -97,12 +97,12 @@ class UserInterface(QtWidgets.QMainWindow):
         self.singleReadToggle: bool = False
         self.homed: bool = False
         self.singleReadForce: float = float()
-        self.singleReadForces: int = 10
-        self.singleReadSkips: int = 10
-        self.stepSizeMDM: float = 0.05
-        self.plotIndexX = 1
-        self.plotIndexY = 2
-        self.velocity = int(self.ui.setVelocity.value())
+        self.singleReadForces: int = self.ui.setLineReads.value()
+        self.singleReadSkips: int = self.ui.setLineSkips.value()
+        self.stepSizeMDM: float = self.ui.setStepSizeMDM.value()
+        self.plotIndexX: int = 1
+        self.plotIndexY: int = 2
+        self.velocity = self.ui.setVelocity.value()
         self.txtLogMDM: str = str()
         self.reMDMMatch: re.Pattern[str] = re.compile(r"\[[A-Za-z0-9]+\]")
         self.data: list[list[float]] = [[], [], []]
@@ -115,7 +115,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.plotMDM()
 
         # Plot timer interval in ms
-        self.plotTimerInterval: int = 100
+        self.plotTimerInterval: int = self.ui.setPlotTimerInterval.value()
 
         ##################
         # MULTITHREADING #
@@ -1111,8 +1111,8 @@ class UserInterface(QtWidgets.QMainWindow):
             )
         try:
             self.sensor.cmds.ST()
-        except RuntimeError as error:
-            self.ui.errorMessage([error.__class__, error.__class__, error.__cause__])
+        except RuntimeError as e:
+            self.ui.errorMessage = [e.__class__.__name__, str(e), "Might have to unplug the adapter and sensor."]
             self.error()
 
     def butDisplayTare(self) -> None:
@@ -1274,8 +1274,7 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
                 self.ser.setDTR(False)
             except Exception as e:
                 self.failed = True
-                self.ui.errorMessage = [
-                    e.__class__.__name__, e.args[0]+"\n\nCheck if Port is not already in use."]
+                self.ui.errorMessage = [e.__class__.__name__, str(e), "Check if Port is not already in use."]
                 self.errorSignal.emit()
 
     def __call__(self, **kwargs) -> None:
@@ -1294,8 +1293,7 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
             self.ser.setDTR(False)
         except Exception as e:
             self.failed = True
-            self.ui.errorMessage = [
-                e.__class__.__name__, e.args[0]+"\n\nCheck if Port is not already in use."]
+            self.ui.errorMessage = [e.__class__.__name__, str(e), "Check if Port is not already in use."]
             self.errorSignal.emit()
 
 
