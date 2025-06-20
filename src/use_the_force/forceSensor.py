@@ -14,7 +14,7 @@ class ForceSensor():
         """
         Base class for the force sensor with almost all functionality.
 
-        Use ForceSensor.cmds.\<command\>() for commands:
+        Use ForceSensor.cmds.`COMMAND_NAME`() for commands:
         >>> sensor = ForceSensor("COM0")
         >>> commands = sensor.cmds
         >>> commands.SR()
