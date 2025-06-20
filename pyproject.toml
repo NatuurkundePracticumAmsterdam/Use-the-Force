@@ -1,5 +1,5 @@
 [project]
-name = "use_the_force"
+name = "use-the-force"
 version = "0.1.0"
 description = "Code for practicum Use the Force at Vrije Universteit Amsterdam."
 readme = "README.md"
