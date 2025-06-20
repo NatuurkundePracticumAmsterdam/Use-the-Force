@@ -1,9 +1,17 @@
 Metadata-Version: 2.4
 Name: use-the-force
-Version: 0.1.0
+Version: 0.1.1
 Summary: Code for practicum Use the Force at Vrije Universteit Amsterdam.
-Project-URL: Homepage, https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force
-Project-URL: Issues, https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues
+Project-URL: source, https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force
+Project-URL: issues, https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
+Classifier: Programming Language :: Python :: 3.15
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 License-File: LICENSE

@@ -1,6 +1,6 @@
 [project]
 name = "use-the-force"
-version = "0.1.0"
+version = "0.1.1"
 description = "Code for practicum Use the Force at Vrije Universteit Amsterdam."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -10,7 +10,17 @@ dependencies = [
  "PySide6",
  "pyqtgraph",
 ]
+classifiers = [
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
+    'Programming Language :: Python :: 3.15'
+]
 
 [project.urls]
-Homepage = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
-Issues = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues"
+source = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
+issues = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues"
