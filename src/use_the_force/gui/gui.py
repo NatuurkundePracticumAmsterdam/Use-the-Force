@@ -25,9 +25,9 @@ __all__ = [
     "start"
 ]
 
+
 class UserInterface(QtWidgets.QMainWindow):
     def __init__(self) -> None:
-        # roep de __init__() aan van de parent class
         super().__init__()
 
         self.ui = Ui_MainWindow()
@@ -62,7 +62,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butTareDisplay: self.butDisplayTare,
             self.ui.butSwapPositions: self.swapPositions
         }
-        
+
         # Connect all buttons
         for button, handler in self.button_handlers.items():
             button.pressed.connect(handler)
@@ -93,7 +93,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # INITIALIZE VARS #
         ###################
         self.sensorConnected: bool = False
-        self.threadReachedEnd = False
+        self.threadReachedEnd: bool = False
         self.recording: bool = False
         self.fileGraphOpen: bool = False
         self.fileOpen: bool = False
@@ -109,7 +109,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.stepSizeMDM: float = self.ui.setStepSizeMDM.value()
         self.plotIndexX: int = 1
         self.plotIndexY: int = 2
-        self.velocity = self.ui.setVelocity.value()
+        self.velocity: int = self.ui.setVelocity.value()
         self.txtLogMDM: str = str()
         self.reMDMMatch: re.Pattern[str] = re.compile(r"\[[A-Za-z0-9]+\]")
         self.data: list[list[float]] = [[], [], []]
@@ -177,7 +177,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.butConnect,
             self.ui.setPortName
         )
-        self.ui.setForceApplied.editingFinished.disconnect(self.butDisplayForce)
+        self.ui.setForceApplied.editingFinished.disconnect(
+            self.butDisplayForce)
         self.disableElement(
             self.ui.setNewtonPerCount,
             self.ui.setGaugeValue,
@@ -189,7 +190,8 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.setForceApplied,
             self.ui.butHome
         )
-        self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor")
+        self.ui.toolBox.setItemText(
+            self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor")
 
     def setConnectedUI(self) -> None:
         """
@@ -229,10 +231,10 @@ class UserInterface(QtWidgets.QMainWindow):
             self.recording = False
         if self.sensorConnected:
             self.butConnect()
-        if not (self.fileOpen or self.MDMActive) and len(self.data[0])>0:
+        if not (self.fileOpen or self.MDMActive) and len(self.data[0]) > 0:
             self.ui.errorMessage = [
                 "Unsaved Data", "Unsaved Data!", "You have unsaved data, quit anyways?"]
-            if not self.error(): # Cancel
+            if not self.error():  # Cancel
                 event.ignore()
                 self.butSave()
 
@@ -319,22 +321,22 @@ class UserInterface(QtWidgets.QMainWindow):
             except:
                 self.ui.graph1.setXRange(0, self.data[self.plotIndexX][-1])
                 self.ui.graph1.setYRange(
-                        min(self.data[self.plotIndexY]), max(self.data[self.plotIndexY]))
+                    min(self.data[self.plotIndexY]), max(self.data[self.plotIndexY]))
 
     def switchPlotIndexX(self, index: int) -> None:
         self.plotIndexX = index
         if index == 0:
             self.updatePlotLabel(
-                graph=self.ui.graph1, 
-                labelLoc="bottom", 
+                graph=self.ui.graph1,
+                labelLoc="bottom",
                 labelTxt="Time [s]"
-                )
+            )
         elif index == 1:
             self.updatePlotLabel(
-                graph=self.ui.graph1, 
-                labelLoc="bottom", 
+                graph=self.ui.graph1,
+                labelLoc="bottom",
                 labelTxt="Displacement [mm]"
-                )
+            )
         self.ui.graph1.clear()
         self.updatePlot()
 
@@ -427,7 +429,8 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.startsensorConnect.start()
             else:
                 if len(devices) > 0:
-                    self.ui.errorMessage = ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([port.device for port in list_ports.comports()])]
+                    self.ui.errorMessage = ["Port not found", f"Port: {self.ui.setPortName.text().upper()} was not detected!", "Available ports:\n" + '\n'.join([
+                        port.device for port in list_ports.comports()])]
                     self.error()
                 else:
                     self.ui.errorMessage = [
@@ -457,15 +460,16 @@ class UserInterface(QtWidgets.QMainWindow):
             if vr == '':
                 raise RuntimeError("[ERROR]: Returned empty string.")
             else:
-                self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(self.ui.sensorOptions), "Sensor v:"+vr.split(":")[1][1:])
+                self.ui.toolBox.setItemText(self.ui.toolBox.indexOf(
+                    self.ui.sensorOptions), "Sensor v:"+vr.split(":")[1][1:])
         except RuntimeError as e:
             self.sensor.ClosePort()
             self.resetConnectUI()
             self.ui.errorMessage = [
-                                    "Connection Error", 
-                                    "Connection Error", 
-                                    "[ERROR]: Retrieved no data."
-                                ]
+                "Connection Error",
+                "Connection Error",
+                "[ERROR]: Retrieved no data."
+            ]
             self.error()
             return
 
@@ -473,14 +477,14 @@ class UserInterface(QtWidgets.QMainWindow):
         vel = self.sensor.cmds.GV()
         self.ui.setVelocity.setValue(vel)
         self.velocity = vel
-        if pos>=0 and pos<47:
+        if pos >= 0 and pos < 47:
             self.homed = True
             self.enableElement(
                 self.ui.butRecord,
                 self.ui.butMove
             )
             self.ui.setPosition.setValue(pos)
-        
+
         self.setConnectedUI()
 
     def sensorDisconnect(self) -> None:
@@ -526,7 +530,6 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.butRecord,
                     self.ui.butMove
                 )
-            
 
         return bool(self.error_ui(*self.ui.errorMessage))
 
@@ -586,14 +589,14 @@ class UserInterface(QtWidgets.QMainWindow):
             )
 
             if not self.threadReachedEnd:
-                pass # one day will be able to wait for motor to stop.
+                pass  # one day will be able to wait for motor to stop.
 
         else:
-            if len(self.data[0])>0:
+            if len(self.data[0]) > 0:
                 if not self.fileOpen:
                     self.ui.errorMessage = [
                         "Unsaved Data", "Unsaved Data!", "You have unsaved data, do you wish to continue?"]
-                    if not self.error(): # Cancel
+                    if not self.error():  # Cancel
                         self.butSave()
                         return
                 self.butClear()
@@ -1082,7 +1085,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.sensor.cmds.SV(self.velocity)
 
     def butHome(self) -> None:
-        self.ui.errorMessage = ["Home Warning", "Home Warning", "Make sure nothing is obstructing the path downwards.<br>The motor will not stop during homing!"]
+        self.ui.errorMessage = ["Home Warning", "Home Warning",
+                                "Make sure nothing is obstructing the path downwards.<br>The motor will not stop during homing!"]
         if self.error():
             self.butUpdateVelocity()
             self.sensor.cmds.HM()
@@ -1113,7 +1117,8 @@ class UserInterface(QtWidgets.QMainWindow):
         try:
             self.sensor.cmds.ST()
         except RuntimeError as e:
-            self.ui.errorMessage = [e.__class__.__name__, str(e), "Might have to unplug the adapter and sensor."]
+            self.ui.errorMessage = [e.__class__.__name__, str(
+                e), "Might have to unplug the adapter and sensor."]
             self.error()
 
     def butDisplayTare(self) -> None:
@@ -1144,7 +1149,7 @@ class mainLogWorker(QObject, QRunnable):
     def __init__(self, callerSelf: UserInterface) -> None:
         super().__init__()
         self.callerSelf: UserInterface = callerSelf
-        self.logLess:bool = bool()
+        self.logLess: bool = bool()
         self.singleReadForces: int = self.callerSelf.singleReadForces
 
     def run(self) -> None:
@@ -1164,7 +1169,7 @@ class mainLogWorker(QObject, QRunnable):
             # wait until the stage has reached the start position
             sleep(abs(startPos - currentPos) / trueVelocity + 1)
         self.singleReadForces = self.callerSelf.singleReadForces
-        
+
         _skip: list[float] = [self.callerSelf.sensor.cmds.SR()
                               for i in range(self.callerSelf.singleReadSkips)]
 
@@ -1183,8 +1188,8 @@ class mainLogWorker(QObject, QRunnable):
                 if time < travelTime:
                     Position = trueVelocity*time
                 elif self.callerSelf.plotIndexX != 0 and allowTimeSwitch:
-                        Position = float(abs(endPos-startPos))
-                        self.switchXAxisSignal.emit()
+                    Position = float(abs(endPos-startPos))
+                    self.switchXAxisSignal.emit()
                 Force = self.read()
                 self.callerSelf.data[0].append(time)
                 self.callerSelf.data[1].append(Position)
@@ -1193,13 +1198,13 @@ class mainLogWorker(QObject, QRunnable):
                     # logs: t[s], s[mm], F[mN]
                     self.callerSelf.measurementLog.writeLog(
                         [time, Position, Force])
-                
+
                 self.singleReadForces = self.callerSelf.singleReadForces
 
             except ValueError:
                 # I know this isn't the best way to deal with it, but it works fine (for now)
                 pass
-        
+
         self.callerSelf.sensor.cmds.DC()
         self.endSignal.emit()
 
@@ -1210,7 +1215,7 @@ class mainLogWorker(QObject, QRunnable):
         if self.logLess:
             # self.callerSelf.unsavedData = self.callerSelf.data
             self.callerSelf.enableElement(self.callerSelf.ui.butSave)
-    
+
     def read(self) -> float:
         forces: list[float] = [self.callerSelf.sensor.ForceFix(
             self.callerSelf.sensor.cmds.SR()) for i in range(self.singleReadForces)]
@@ -1220,12 +1225,11 @@ class mainLogWorker(QObject, QRunnable):
         )
         return Force
 
-
     def singleRead(self) -> None:
         self.singleReadStartSignal.emit()
         self.singleReadForces = self.callerSelf.singleReadForces
         _skip: list[float] = [self.callerSelf.sensor.ForceFix(self.callerSelf.sensor.cmds.SR())
-                            for i in range(self.callerSelf.singleReadSkips)]
+                              for i in range(self.callerSelf.singleReadSkips)]
         self.callerSelf.singleReadForce = self.read()
         self.singleReadEndSignal.emit()
 
@@ -1257,7 +1261,7 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
         ForceSensor.__init__(self, PortName=PortName, kwargs=kwargs)
         QObject.__init__(self)
         QRunnable.__init__(self)
-        
+
         self.caller: UserInterface = caller
         self.ui: Ui_MainWindow = caller.ui
         self.failed: bool = False
@@ -1275,7 +1279,8 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
                 self.ser.setDTR(False)
             except Exception as e:
                 self.failed = True
-                self.ui.errorMessage = [e.__class__.__name__, str(e), "Check if Port is not already in use."]
+                self.ui.errorMessage = [e.__class__.__name__, str(
+                    e), "Check if Port is not already in use."]
                 self.errorSignal.emit()
 
     def __call__(self, **kwargs) -> None:
@@ -1294,7 +1299,8 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
             self.ser.setDTR(False)
         except Exception as e:
             self.failed = True
-            self.ui.errorMessage = [e.__class__.__name__, str(e), "Check if Port is not already in use."]
+            self.ui.errorMessage = [e.__class__.__name__, str(
+                e), "Check if Port is not already in use."]
             self.errorSignal.emit()
 
 
@@ -1330,7 +1336,7 @@ class ErrorInterface(QtWidgets.QDialog):
 """)
         else:
             self.ui.ErrorText.setText(f"<b>{errorText}</b>")
-        
+
         return self.exec()
 
 
