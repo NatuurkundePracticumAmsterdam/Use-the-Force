@@ -11,10 +11,10 @@ import bisect
 from serial.tools import list_ports  # type: ignore
 import re
 
-from .main_ui import Ui_MainWindow
-from .error_ui import Ui_errorWindow
-from ..forceSensor import Commands, ForceSensor
-from ..logging import Logging
+from use_the_force.gui.main_ui import Ui_MainWindow
+from use_the_force.gui.error_ui import Ui_errorWindow
+from use_the_force.forceSensor import Commands, ForceSensor
+from use_the_force.logging import Logging
 
 __all__ = [
     "UserInterface",

@@ -2,9 +2,9 @@
 GUI module to launch the GUI.
 """
 
-from .gui import *
-from .error_ui import *
-from .main_ui import *
+from use_the_force.gui.gui import *
+from use_the_force.gui.error_ui import *
+from use_the_force.gui.main_ui import *
 
 __all__ = [
     "UserInterface",
