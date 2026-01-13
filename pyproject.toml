@@ -20,6 +20,8 @@ dependencies = [
     "pyside6-essentials>=6.10.1",
 ]
 
+
 [project.urls]
-source = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
-issues = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues"
+Homepage = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
+Repository = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
+Issues = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues"
