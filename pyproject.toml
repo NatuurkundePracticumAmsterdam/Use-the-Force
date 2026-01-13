@@ -4,19 +4,20 @@ version = "0.1.1"
 description = "Code for practicum Use the Force at Vrije Universteit Amsterdam."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
- "matplotlib",
- "pyserial",
- "PySide6",
- "pyqtgraph",
-]
 classifiers = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13'
+    'Programming Language :: Python :: 3.13',
+]
+dependencies = [
+    "matplotlib>=3.10.1",
+    "pyqtgraph>=0.14.0",
+    "pyserial>=3.5",
+    "pyside6-essentials>=6.10.1",
 ]
 
 [project.urls]
