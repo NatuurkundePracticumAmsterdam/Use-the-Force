@@ -1,11 +1,12 @@
 from io import TextIOWrapper
 
-__all__ = [
-    "Logging"
-]
+__all__ = ["Logging"]
 
-class Logging():
-    def __init__(self, filename: str = '', NeverCloseFile: bool = False, extension: str = ".csv") -> None:
+
+class Logging:
+    def __init__(
+        self, filename: str = "", NeverCloseFile: bool = False, extension: str = ".csv"
+    ) -> None:
         """
         Class to log the data from the force sensor
 
@@ -17,7 +18,7 @@ class Logging():
         self.NeverCloseFile: bool = NeverCloseFile
         self.extension: str = extension
 
-    def createLog(self, ext: str = '.csv') -> None:
+    def createLog(self, ext: str = ".csv") -> None:
         """
         Creates a new file for logging.
         """
@@ -27,17 +28,16 @@ class Logging():
         self.full_filename = "DATA/" + self.filename + "_" + str(i) + ext
         while True:
             try:
-                f = open(self.full_filename, 'r')
+                f = open(self.full_filename, "r")
                 f.close()
                 i += 1
-                self.full_filename = "DATA/" + \
-                    self.filename + "_" + str(i) + ext
+                self.full_filename = "DATA/" + self.filename + "_" + str(i) + ext
             except:
                 break
 
         # Create this file.
-        self.HAND = open(self.full_filename, 'w+')
-        
+        self.HAND = open(self.full_filename, "w+")
+
         self.HAND.write("Time,Displacement,Force\n")
 
         if not self.NeverCloseFile:
@@ -52,13 +52,13 @@ class Logging():
         self.full_filename = self.filename
 
         # Create this file.
-        self.HAND = open(self.full_filename, 'w+')
+        self.HAND = open(self.full_filename, "w+")
         self.HAND.write("Time,Displacement,Force\n")
         self.HAND.close()
         if self.NeverCloseFile:
-            self.HAND = open(self.full_filename, 'a+')
+            self.HAND = open(self.full_filename, "a+")
 
-    def replaceFile(self, data: list[float|int]):
+    def replaceFile(self, data: list[float | int]):
         self.HAND = open(self.full_filename, "w+t")
         self.NeverCloseFile = True
         self.writeLogFull(data=data)
@@ -67,11 +67,10 @@ class Logging():
 
     ### ===LOGGING FUNCTION===###
     # Puts the values in the given list into the opened log file.
-    def writeLog(self, data: list[float|int]) -> None:
-
+    def writeLog(self, data: list[float | int]) -> None:
         # Open file
         if not self.NeverCloseFile:
-            self.HAND = open(self.full_filename, 'a+')
+            self.HAND = open(self.full_filename, "a+")
 
         # Write data
         for i, d in enumerate(data):
@@ -79,7 +78,7 @@ class Logging():
                 txt = str(d)
             else:
                 txt = str(round(d, 8))
-                self.HAND.write(',')
+                self.HAND.write(",")
 
             self.HAND.write(txt)
         self.HAND.write("\n")
@@ -88,15 +87,14 @@ class Logging():
         if not self.NeverCloseFile:
             self.HAND.close()
 
-    def writeLogFull(self, data: list[float|int]) -> None:
-
+    def writeLogFull(self, data: list[float | int]) -> None:
         # Open file
         if not self.NeverCloseFile:
-            self.HAND = open(self.full_filename, 'a+')
+            self.HAND = open(self.full_filename, "a+")
         # Write data, variable length of `data`
         for indexData in range(len(data[0])):
             line: str = str()
-            lineValues: list[int|float] = []
+            lineValues: list[int | float] = []
 
             for indexUnit in range(len(data)):
                 lineValues.append(str(data[indexUnit][indexData]))

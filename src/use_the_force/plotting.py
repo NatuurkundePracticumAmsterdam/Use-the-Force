@@ -1,16 +1,18 @@
 from matplotlib import pyplot as plt
 import matplotlib
+
 # Use TkAgg backend for interactive plotting
 # TkAgg is way less laggy than the default Agg backend
-matplotlib.use('TkAgg') 
+matplotlib.use("TkAgg")
 # self.plt.ion()
 
-__all__ = [
-    "Plotting"
-]
+__all__ = ["Plotting"]
 
-class Plotting():
-    def __init__(self, xlabel: str = "Time (s)", ylabel: str = "Force (mN)", **kwargs) -> None:
+
+class Plotting:
+    def __init__(
+        self, xlabel: str = "Time (s)", ylabel: str = "Force (mN)", **kwargs
+    ) -> None:
         """Class to start with plots.
 
         :param xlabel: Text displayed on x-axes
@@ -24,7 +26,7 @@ class Plotting():
         ### ===PARAMETERS THAT ONE CAN ALTER=== ###
         self.xlabel: str = xlabel
         self.ylabel: str = ylabel
-        self.startTime: float = float(kwargs.pop("startTime", 0.))
+        self.startTime: float = float(kwargs.pop("startTime", 0.0))
 
         ### ===START A NEW FIG=== ###
         self._init_fig()
@@ -35,7 +37,7 @@ class Plotting():
         """
         # 1: Create plot
         self.fig, self.ax1 = plt.subplots(1)
-        self.lines, = self.ax1.plot([], [])
+        (self.lines,) = self.ax1.plot([], [])
 
         # 2: Making the axis prettier.
         # self.ax1.set_autoscalex_on(True)
@@ -69,8 +71,10 @@ class Plotting():
         # Set new data
         self.lines.set_data(data)
 
-        self.ax1.set_ylim(bottom=min(data[1])-abs(min(data[1]))/10,
-                          top=max(data[1])+abs(max(data[1]))/10)
+        self.ax1.set_ylim(
+            bottom=min(data[1]) - abs(min(data[1])) / 10,
+            top=max(data[1]) + abs(max(data[1])) / 10,
+        )
         self.ax1.set_xlim(left=self.startTime, right=data[0][-1])
         self.ax1.autoscale_view()
         # We need to draw *and* flush

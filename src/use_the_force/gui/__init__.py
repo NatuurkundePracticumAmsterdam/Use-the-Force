@@ -13,8 +13,6 @@ __all__ = [
     "ForceSensorGUI",
     "ErrorInterface",
     "start",
-
     "Ui_MainWindow",
-
-    "Ui_errorWindow"
-] # type: ignore
+    "Ui_errorWindow",
+]  # type: ignore
