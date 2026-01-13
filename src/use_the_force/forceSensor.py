@@ -40,7 +40,7 @@ class ForceSensor:
 
         self.cmds = Commands(self.ser)
 
-        if PortName != None:
+        if PortName is not None:
             self.PortName = PortName.upper()
             self.ser.setPort(self.PortName)
             self.ser.open()

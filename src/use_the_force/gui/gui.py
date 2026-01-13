@@ -13,7 +13,7 @@ import re
 
 from use_the_force.gui.main_ui import Ui_MainWindow
 from use_the_force.gui.error_ui import Ui_errorWindow
-from use_the_force.forceSensor import Commands, ForceSensor
+from use_the_force.forceSensor import ForceSensor
 from use_the_force._logging import Logging
 
 __all__ = [
@@ -469,7 +469,7 @@ class UserInterface(QtWidgets.QMainWindow):
                     self.ui.toolBox.indexOf(self.ui.sensorOptions),
                     "Sensor v:" + vr.split(":")[1][1:],
                 )
-        except RuntimeError as e:
+        except RuntimeError:
             self.sensor.ClosePort()
             self.resetConnectUI()
             self.ui.errorMessage = [
@@ -1284,7 +1284,7 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
         self.ui: Ui_MainWindow = caller.ui
         self.failed: bool = False
 
-        if PortName != None:
+        if PortName is not None:
             self.tareValue: float = float(self.ui.setGaugeValue.value())
             self.loadPerCount: float = float(self.ui.setNewtonPerCount.value())
 

@@ -107,10 +107,10 @@ class Logging:
 
     ### ===READ LOG===###
     def readLog(self, *, filename: str | None = None) -> list[list[float]]:
-        if filename == None:
+        if filename is None:
             filename = self.filename
 
-        if self.NeverCloseFile and filename != None:
+        if self.NeverCloseFile and filename is not None:
             file = self.HAND
         else:
             file = open(filename, "r")
