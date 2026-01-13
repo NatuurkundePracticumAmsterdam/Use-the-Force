@@ -14,7 +14,7 @@ import re
 from use_the_force.gui.main_ui import Ui_MainWindow
 from use_the_force.gui.error_ui import Ui_errorWindow
 from use_the_force.forceSensor import Commands, ForceSensor
-from use_the_force.logging import Logging
+from use_the_force._logging import Logging
 
 __all__ = [
     "UserInterface",

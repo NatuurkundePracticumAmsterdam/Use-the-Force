@@ -28,6 +28,9 @@ Homepage = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
 Repository = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force"
 Issues = "https://github.com/NatuurkundePracticumAmsterdam/Use-the-Force/issues"
 
+[project.scripts]
+use-the-force = "use_the_force.main:main"
+
 [build-system]
 requires = ["uv_build>=0.9.24,<0.10.0"]
 build-backend = "uv_build"
