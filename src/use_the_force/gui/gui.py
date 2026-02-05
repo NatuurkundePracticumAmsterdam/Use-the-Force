@@ -1,20 +1,19 @@
+import bisect
+import re
 import sys
+import threading
 from time import perf_counter_ns, sleep
 
-from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, QTimer, QObject, QRunnable, QThreadPool, Slot, Qt
-from PySide6.QtGui import QCloseEvent
 import pyqtgraph as pg
-
-import threading
-import bisect
+from PySide6 import QtWidgets
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtGui import QCloseEvent
 from serial.tools import list_ports  # type: ignore
-import re
 
-from use_the_force.gui.main_ui import Ui_MainWindow
-from use_the_force.gui.error_ui import Ui_errorWindow
-from use_the_force.forceSensor import ForceSensor
 from use_the_force._logging import Logging
+from use_the_force.forceSensor import ForceSensor
+from use_the_force.gui.error_ui import Ui_errorWindow
+from use_the_force.gui.main_ui import Ui_MainWindow
 
 __all__ = [
     "UserInterface",
@@ -418,7 +417,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # Connect
         else:
             devices: list[str] = [port.device for port in list_ports.comports()]
-            if self.ui.setPortName.text().upper() in devices:
+            if self.ui.setPortName.text() in devices:
                 self.sensorConnected = True
                 self.ui.butFile.setEnabled(False)
                 self.startsensorConnect = threading.Thread(
@@ -1288,7 +1287,7 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
             self.tareValue: float = float(self.ui.setGaugeValue.value())
             self.loadPerCount: float = float(self.ui.setNewtonPerCount.value())
 
-            self.PortName: str = PortName.upper()
+            self.PortName: str = PortName
 
             try:
                 self.ser.setPort(self.PortName)
@@ -1311,7 +1310,7 @@ class ForceSensorGUI(ForceSensor, QObject, QRunnable):
         self.tareValue: float = float(self.ui.setGaugeValue.value())
         self.loadPerCount: float = float(self.ui.setNewtonPerCount.value())
 
-        self.PortName: str = self.ui.setPortName.text().upper()
+        self.PortName: str = self.ui.setPortName.text()
 
         try:
             self.ser.setPort(self.PortName)
