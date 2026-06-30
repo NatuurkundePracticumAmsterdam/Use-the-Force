@@ -7,3 +7,9 @@ https://www.thorlabs.com/50-mm-1.97-inch--compact-motorized-translation-stage?pn
 
 Encoder details: 
 Encoder Counts per Lead Screw Revolution: 34.555
+
+Force sensor amplifier: HX711
+
+Force sensor interface: Arduino
+
+Manual: https://randomnerdtutorials.com/arduino-load-cell-hx711/
