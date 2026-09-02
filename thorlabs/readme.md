@@ -17,3 +17,7 @@ Force sensor amplifier: HX711
 Force sensor interface: Arduino
 
 Manual: https://randomnerdtutorials.com/arduino-load-cell-hx711/
+
+Useful video and other github repository for HX711:
+https://www.youtube.com/watch?v=sxzoAGf1kOo
+https://github.com/olkal/HX711_ADC
