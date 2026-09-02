@@ -35,3 +35,8 @@ use-the-force = "use_the_force.main:main"
 [build-system]
 requires = ["uv_build>=0.9.24,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.uv.workspace]
+members = [
+    "thorlabs/LoadCell_HX711_MVC",
+]
