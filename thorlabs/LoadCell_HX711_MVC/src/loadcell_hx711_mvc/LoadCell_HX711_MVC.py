@@ -16,6 +16,9 @@ class ArduinoHX711Device:
         )
 
         self.device.baud_rate = 57600  # Set the baud rate -> the speed at which the serial communication happens. The firmware has this at 57600
+        self.device.read_termination = "\r\n"
+        self.device.write_termination = "\n"
+        self.device.timeout = 2000
 
     def get_identification(self):
         return self.device.query("*IDN?")
@@ -24,6 +27,6 @@ class ArduinoHX711Device:
 if __name__ == "__main__":
     print(list_resources())
 
-    my_load_cell = ArduinoHX711Device("ASRL/dev/cu.usbmodem101::INSTR")
+    my_load_cell = ArduinoHX711Device("ASRL/dev/cu.usbmodem1101::INSTR")
 
     print(my_load_cell.get_identification())

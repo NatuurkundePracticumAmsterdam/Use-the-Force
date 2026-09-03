@@ -7,7 +7,11 @@ authors = [
     { name = "DylanvanArneman", email = "51400178+DylanvanArneman@users.noreply.github.com" }
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "pyserial>=3.5",
+    "pyvisa>=1.16.2",
+    "pyvisa-py>=0.8.1",
+]
 
 [project.scripts]
 loadcell-hx711-mvc = "loadcell_hx711_mvc:main"
