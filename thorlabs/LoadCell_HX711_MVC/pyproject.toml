@@ -1,7 +1,7 @@
 [project]
 name = "loadcell-hx711-mvc"
 version = "0.1.0"
-description = "Add your description here"
+description = "Software for the Use-The-Force experiment using the Thorlabs setup -- MVC structure"
 readme = "README.md"
 authors = [
     { name = "DylanvanArneman", email = "51400178+DylanvanArneman@users.noreply.github.com" }
