@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from loadcell_hx711_mvc.controller_LoadCell_HX711 import (
@@ -79,20 +81,72 @@ class MjolnirExperiment:
 
         measurement_list = []
 
-        for i in range(number_of_measurements):
+        for i in range(
+            number_of_measurements
+        ):  # Carry out measurement multiple times and store in a list
             measurement_list.append(self.device.measure())
 
-        average_measured_force = np.mean(measurement_list)
+        average_measured_force = np.mean(
+            measurement_list
+        )  # Take the average of multiple readings
         standard_deviation = np.std(
             measurement_list, ddof=1
         )  # Use N-1 because the sample mean is estimated from the measurements, leaving N-1 independent deviations.
-        average_measured_force_err = standard_deviation / np.sqrt(
-            number_of_measurements
+        average_measured_force_err = (
+            standard_deviation
+            / np.sqrt(
+                number_of_measurements  # Uncertainty on average: std_dev / sqrt(N), where N is number of measurements
+            )
         )
 
         return average_measured_force, average_measured_force_err
 
-    def measure_over_time(self, duration, interval):
+    def measure_over_time(
+        self, duration, interval=0.1, number_of_measurements=10
+    ):  # This method can be used by the CLI. Here you have to define a fixed duration, so you cannot "start" and "stop" a measurement live.
+        """Take repeated averaged force measurements over a fixed duration.
+
+        Args:
+            duration (float): Total measurement duration in seconds.
+            interval (float, optional): Time between measurements in seconds.
+                Defaults to 0.1.
+            number_of_measurements (int, optional): Number of measurements
+                used to calculate each average. Defaults to 10.
+
+        Returns:
+            times (numpy.ndarray): Measurement times in seconds.
+            forces (numpy.ndarray): Average measured forces in newtons.
+            uncertainties (numpy.ndarray): Statistical uncertainties in newtons.
+        """
+        times = []
+        forces = []
+        uncertainties = []
+
+        start_time = time.time()
+
+        while time.time() - start_time < duration:
+            current_time = time.time() - start_time
+
+            force, uncertainty = self.take_average_measurement(
+                number_of_measurements
+            )  # At this timestamp: compute average force
+
+            times.append(current_time)
+            forces.append(force)
+            uncertainties.append(uncertainty)
+
+            time.sleep(interval)  # go to next timestamp
+
+        return (
+            np.array(times),
+            np.array(forces),
+            np.array(uncertainties),
+        )
+
+    def start_live_measurement(self):
+        pass
+
+    def stop_live_measurement(self):
         pass
 
 
@@ -120,3 +174,11 @@ if __name__ == "__main__":
 
     print(experiment.take_single_measurement())
     print(experiment.take_average_measurement(20))
+
+    input("Now we can start a time measurement. Press Enter when you are ready")
+
+    times, forces, uncertainties = experiment.measure_over_time(10)
+
+    print(times)
+    print(forces)
+    print(uncertainties)

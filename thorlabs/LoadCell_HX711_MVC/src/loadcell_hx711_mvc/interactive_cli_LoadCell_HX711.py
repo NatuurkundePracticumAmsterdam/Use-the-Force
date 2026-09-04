@@ -31,6 +31,7 @@ def main():
             print("  tare")
             print("  calibrate")
             print("  measure")
+            print("  time-measurement")
             print("  quit")
 
         elif command == "list":
@@ -92,6 +93,34 @@ def main():
 
             print(f"Measured force: {force:.4f} N")
             print(f"Statistical uncertainty: {uncertainty:.4f} N")
+
+        elif command.startswith("time-measurement"):
+            if experiment is None:
+                print("Error: no device connected.")
+                continue
+
+            parts = command.split()
+
+            if len(parts) != 2:
+                print("Usage: measure-time <duration in seconds>")
+                continue
+
+            duration = float(parts[1])
+
+            times, forces, uncertainties = experiment.measure_over_time(duration)
+
+            plt.figure()
+            plt.errorbar(
+                times,
+                forces,
+                yerr=uncertainties,
+                fmt="o",
+            )
+
+            plt.xlabel("Time [s]")
+            plt.ylabel("Force [N]")
+            plt.title("Force vs. Time")
+            plt.show()
 
         else:
             print(f"Unknown command: {command}")
