@@ -57,10 +57,10 @@ void loop() {
     else if (command.startsWith(COM_CALIBRATE)) {
       // Calibrate the load cell -> The unit used to calibrate the load cell is also the unit that all subsequent measurements return
       String valueString = command.substring(strlen(COM_CALIBRATE));
-      float known_mass = valueString.toFloat();
+      float known_force = valueString.toFloat();
 
       LoadCell.refreshDataSet();
-      float newCalibrationValue = LoadCell.getNewCalibration(known_mass);
+      float newCalibrationValue = LoadCell.getNewCalibration(known_force);
       LoadCell.setCalFactor(newCalibrationValue);
 
       // Serial.print("CALIBRATION FACTOR: ");
@@ -69,7 +69,7 @@ void loop() {
       }
 
     else if (command == COM_MEASURE) {
-      // Measure the mass of a load. The units of this measurement are the same as the units that were used during calibration
+      // Measure the force of a load exerted on the sensor. The units of this measurement are the same as the units that were used during calibration
       float value = LoadCell.getData();
       Serial.println(value); // This prints the measured value onto the serial monitor
     }

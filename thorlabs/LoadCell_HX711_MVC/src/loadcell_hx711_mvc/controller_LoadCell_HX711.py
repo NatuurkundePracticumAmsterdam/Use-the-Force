@@ -17,7 +17,7 @@ def list_resources():  # Function used to print out all available ports
 class ArduinoHX711Device:
     """A class to create an Arduino-HX711 device."""
 
-    def __init__(self, port_name="ASRL/dev/cu.usbmodem101::INSTR"):
+    def __init__(self, port_name):
         """Initialize Arduino device and start pyvisa communication with device.
 
         Args:
@@ -65,7 +65,7 @@ class ArduinoHX711Device:
         """Calibrate the load cell using a reference mass.
 
         Args:
-            reference_mass (_float_): Mass of the reference object. The unit used to calibrate the load cell is also the unit that all subsequent measurements return.
+            reference_mass (_float_): Mass of the reference object. The unit used to calibrate the load cell is also the unit that all subsequent measurements return. If you calibrate using N, returned measurements will be in N. If you calibrate in kg, returned measurements will be in kg.
 
         Returns:
             String: Confirmation that calibration completed successfully."""
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     # print(my_load_cell.tare())
     # print(my_load_cell.measure())
-    # # Pen cap mass: 2.277g g; full red pen mass: 8.208 g; blue pen: 6.479 g; thin wire: 0.338 g
+    # # Pen cap mass: 2.277 g; full red pen mass: 8.208 g; blue pen: 6.479 g; thin wire: 0.338 g (quick: g to N -> mass/1000 * 9.81)
     # print(my_load_cell.calibrate(2.277))
 
     # print(my_load_cell.measure())
