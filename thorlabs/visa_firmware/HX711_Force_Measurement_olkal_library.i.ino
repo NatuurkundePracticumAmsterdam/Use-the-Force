@@ -21,6 +21,8 @@ void setup() {
   Serial.begin(57600); // The argument here is the baud rate, i.e. the speed at which the adruino and computer communicate over serial
   Serial.setTimeout(100); // Prevents teh Arduino from getting stuck indefinitely if there is something wrong with the serial communication
 
+  Serial.println("STARTING"); // Used for troubleshooting
+
 
   LoadCell.begin();
   unsigned long stabilizingtime = 2000; // precision right after power-up can be improved by adding a few seconds of stabilizing time (from olkal example) -> 2000 corresponds to a 2 second stabilization period
@@ -28,6 +30,8 @@ void setup() {
 
   LoadCell.start(stabilizingtime, _tare); // Actually starts the process
 
+
+  Serial.println("READY"); // A little printed out message showing that the system has started up properly
 }
 
 void loop() {
@@ -51,7 +55,7 @@ void loop() {
     }
 
     else if (command.startsWith(COM_CALIBRATE)) {
-      // Calibrate the load cell
+      // Calibrate the load cell -> The unit used to calibrate the load cell is also the unit that all subsequent measurements return
       String valueString = command.substring(strlen(COM_CALIBRATE));
       float known_mass = valueString.toFloat();
 
@@ -65,7 +69,7 @@ void loop() {
       }
 
     else if (command == COM_MEASURE) {
-      // Measure a load
+      // Measure the mass of a load. The units of this measurement are the same as the units that were used during calibration
       float value = LoadCell.getData();
       Serial.println(value); // This prints the measured value onto the serial monitor
     }
