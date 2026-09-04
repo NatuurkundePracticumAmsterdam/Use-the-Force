@@ -92,6 +92,9 @@ class MjolnirExperiment:
 
         return average_measured_force, average_measured_force_err
 
+    def measure_over_time(self, duration, interval):
+        pass
+
 
 if __name__ == "__main__":
     model_list_resources()
