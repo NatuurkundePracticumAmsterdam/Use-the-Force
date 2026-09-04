@@ -57,9 +57,9 @@ class MjolnirExperiment:
         """
 
         single_measurement = self.device.measure()
-        single_measurement_err = 0
+        # single_measurement_err = 0
 
-        return single_measurement, single_measurement_err
+        return single_measurement  # , single_measurement_err
 
     def take_average_measurement(
         self, number_of_measurements=2
@@ -101,7 +101,7 @@ class MjolnirExperiment:
 
         return average_measured_force, average_measured_force_err
 
-    def measure_over_time(
+    def measure_over_time_with_uncertainty(
         self, duration, interval=0.1, number_of_measurements=10
     ):  # This method can be used by the CLI. Here you have to define a fixed duration, so you cannot "start" and "stop" a measurement live.
         """Take repeated averaged force measurements over a fixed duration.
@@ -125,23 +125,50 @@ class MjolnirExperiment:
         start_time = time.time()
 
         while time.time() - start_time < duration:
-            current_time = time.time() - start_time
-
             force, uncertainty = self.take_average_measurement(
                 number_of_measurements
             )  # At this timestamp: compute average force
-
+            current_time = time.time() - start_time
             times.append(current_time)
             forces.append(force)
             uncertainties.append(uncertainty)
 
             time.sleep(interval)  # go to next timestamp
-
         return (
             np.array(times),
             np.array(forces),
             np.array(uncertainties),
         )
+
+    def measure_over_time_with_single_measurements(self, duration, interval=0.1):
+        times = []
+        forces = []
+
+        start_time = time.perf_counter()
+        next_measurement_time = start_time
+
+        while True:
+            # Wait until the scheduled measurement time -- This is to make sure that each force/time measurement is spaced exactly evenly in time
+            while time.perf_counter() < next_measurement_time:
+                time.sleep(0.001)
+
+            # Take the measurement
+            force = self.take_single_measurement()
+
+            # Record the actual measurement time
+            current_time = time.perf_counter() - start_time
+
+            times.append(current_time)
+            forces.append(force)
+
+            # Schedule the next measurement
+            next_measurement_time += interval
+
+            # Stop after the requested duration
+            if current_time >= duration:
+                break
+
+        return np.array(times), np.array(forces)
 
     def start_live_measurement(self):
         pass
@@ -175,10 +202,12 @@ if __name__ == "__main__":
     print(experiment.take_single_measurement())
     print(experiment.take_average_measurement(20))
 
-    input("Now we can start a time measurement. Press Enter when you are ready")
+    input("Now we can start a series of measurements. Press Enter when you are ready")
+    for i in range(100):
+        print(experiment.take_single_measurement())
 
-    times, forces, uncertainties = experiment.measure_over_time(10)
+    # times, forces, uncertainties = experiment.measure_over_time(10)
 
-    print(times)
-    print(forces)
-    print(uncertainties)
+    # print(times)
+    # print(forces)
+    # print(uncertainties)

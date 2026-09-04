@@ -102,7 +102,7 @@ def main():
             parts = command.split()
 
             if len(parts) != 2:
-                print("Usage: measure-time <duration in seconds>")
+                print("Usage: time-measurement <duration in seconds>")
                 continue
 
             duration = float(parts[1])
