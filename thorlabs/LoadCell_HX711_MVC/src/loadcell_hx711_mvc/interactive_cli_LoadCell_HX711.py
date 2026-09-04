@@ -107,15 +107,12 @@ def main():
 
             duration = float(parts[1])
 
-            times, forces, uncertainties = experiment.measure_over_time(duration)
+            times, forces = experiment.measure_over_time_with_single_measurements(
+                duration
+            )
 
             plt.figure()
-            plt.errorbar(
-                times,
-                forces,
-                yerr=uncertainties,
-                fmt="o",
-            )
+            plt.plot(times, forces, "o")
 
             plt.xlabel("Time [s]")
             plt.ylabel("Force [N]")

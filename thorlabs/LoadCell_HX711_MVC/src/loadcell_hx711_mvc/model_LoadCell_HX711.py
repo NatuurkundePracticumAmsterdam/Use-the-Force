@@ -39,7 +39,7 @@ class MjolnirExperiment:
         return self.device.tare()
 
     def calibrate(self, reference_force):
-        """Calibrate the load cell using a reference mass. Input is required to be in NEWTON.
+        """Calibrate the load cell using a reference object (force that the object exerts on the loading cell). Input is required to be in NEWTON.
 
         Args:
             reference_force (_float_): Force exerted on the load cell by the reference object. The unit used to calibrate the load cell is also the unit that all subsequent measurements return.
@@ -148,7 +148,7 @@ class MjolnirExperiment:
         next_measurement_time = start_time
 
         while True:
-            # Wait until the scheduled measurement time -- This is to make sure that each force/time measurement is spaced exactly evenly in time
+            # Wait until the scheduled measurement time -- This is to make sure that each force/time measurement is approximately evenly spaced in time
             while time.perf_counter() < next_measurement_time:
                 time.sleep(0.001)
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     experiment = MjolnirExperiment("ASRL/dev/cu.usbmodem1101::INSTR")
 
-    # Pen cap mass: 2.277 g; full red pen mass: 8.208 g; blue pen: 6.479 g; thin wire: 0.338 g (quick: g to N -> mass/1000 * 9.81)
+    # Pen cap mass: 2.277 g (0.02277 N); full red pen mass: 8.208 g; blue pen: 6.479 g; thin wire: 0.338 g (quick: g to N -> mass/1000 * 9.81)
     pen_cap_mass = 2.277  # grams
     reference_force = pen_cap_mass / 1000.0 * 9.81
 
