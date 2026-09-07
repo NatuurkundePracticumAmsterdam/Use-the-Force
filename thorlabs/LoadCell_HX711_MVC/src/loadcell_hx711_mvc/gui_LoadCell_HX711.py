@@ -301,6 +301,9 @@ class UserInterface(QtWidgets.QMainWindow):
         """Clear the displayed plot."""
         self.ui.plot_widget.clear()
         self.ui.ResetViewButton.setEnabled(False)
+        # Disable the ability to save if you can't see the plot:
+        self.ui.SaveButton.setEnabled(False)
+        # This is mainly implemented because a user might forget what they are storing, and therefore confuse measurements. Better to be able to see what you're saving before you actually save it
 
     @Slot()
     def tare(self):
