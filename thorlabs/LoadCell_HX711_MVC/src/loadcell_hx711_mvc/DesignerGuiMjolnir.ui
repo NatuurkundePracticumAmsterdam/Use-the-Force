@@ -47,6 +47,34 @@
          </widget>
         </item>
         <item>
+         <widget class="QDoubleSpinBox" name="ReferenceValueBox">
+          <property name="locale">
+           <locale language="English" country="UnitedStates"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+          <property name="buttonSymbols">
+           <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+          </property>
+          <property name="prefix">
+           <string>Calibration value: </string>
+          </property>
+          <property name="suffix">
+           <string> N</string>
+          </property>
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="maximum">
+           <double>100000000.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="QuickReadButton">
           <property name="text">
            <string>Quick Read</string>
@@ -61,11 +89,23 @@
           <property name="frame">
            <bool>false</bool>
           </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
           <property name="readOnly">
            <bool>true</bool>
           </property>
           <property name="buttonSymbols">
            <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+          </property>
+          <property name="suffix">
+           <string> N</string>
+          </property>
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="maximum">
+           <double>100000000.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -90,16 +130,22 @@
         <property name="locale">
          <locale language="English" country="UnitedStates"/>
         </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
         <property name="suffix">
-         <string> seconds</string>
+         <string> s</string>
         </property>
         <property name="decimals">
          <number>4</number>
         </property>
         <property name="maximum">
-         <double>10000.000000000000000</double>
+         <double>100000000.000000000000000</double>
         </property>
         <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="value">
          <double>1.000000000000000</double>
         </property>
        </widget>
@@ -126,6 +172,13 @@
        <widget class="QPushButton" name="SaveButton">
         <property name="text">
          <string>Save Plot</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="ClearPlot">
+        <property name="text">
+         <string>Clear Plot</string>
         </property>
        </widget>
       </item>

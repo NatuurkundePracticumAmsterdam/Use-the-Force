@@ -51,6 +51,17 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addWidget(self.CalibrateButton)
 
+        self.ReferenceValueBox = QDoubleSpinBox(self.centralwidget)
+        self.ReferenceValueBox.setObjectName(u"ReferenceValueBox")
+        self.ReferenceValueBox.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.ReferenceValueBox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.ReferenceValueBox.setReadOnly(True)
+        self.ReferenceValueBox.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.ReferenceValueBox.setDecimals(4)
+        self.ReferenceValueBox.setMaximum(100000000.000000000000000)
+
+        self.verticalLayout_3.addWidget(self.ReferenceValueBox)
+
         self.QuickReadButton = QPushButton(self.centralwidget)
         self.QuickReadButton.setObjectName(u"QuickReadButton")
 
@@ -60,8 +71,11 @@ class Ui_MainWindow(object):
         self.QuickReadOutputBox.setObjectName(u"QuickReadOutputBox")
         self.QuickReadOutputBox.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
         self.QuickReadOutputBox.setFrame(False)
+        self.QuickReadOutputBox.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.QuickReadOutputBox.setReadOnly(True)
         self.QuickReadOutputBox.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.QuickReadOutputBox.setDecimals(4)
+        self.QuickReadOutputBox.setMaximum(100000000.000000000000000)
 
         self.verticalLayout_3.addWidget(self.QuickReadOutputBox)
 
@@ -86,9 +100,11 @@ class Ui_MainWindow(object):
         self.MeasureDurationBox = QDoubleSpinBox(self.centralwidget)
         self.MeasureDurationBox.setObjectName(u"MeasureDurationBox")
         self.MeasureDurationBox.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.MeasureDurationBox.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
         self.MeasureDurationBox.setDecimals(4)
-        self.MeasureDurationBox.setMaximum(10000.000000000000000)
+        self.MeasureDurationBox.setMaximum(100000000.000000000000000)
         self.MeasureDurationBox.setSingleStep(1.000000000000000)
+        self.MeasureDurationBox.setValue(1.000000000000000)
 
         self.horizontalLayout_3.addWidget(self.MeasureDurationBox)
 
@@ -111,6 +127,11 @@ class Ui_MainWindow(object):
         self.SaveButton.setObjectName(u"SaveButton")
 
         self.horizontalLayout.addWidget(self.SaveButton)
+
+        self.ClearPlot = QPushButton(self.centralwidget)
+        self.ClearPlot.setObjectName(u"ClearPlot")
+
+        self.horizontalLayout.addWidget(self.ClearPlot)
 
         self.ExitButton = QPushButton(self.centralwidget)
         self.ExitButton.setObjectName(u"ExitButton")
@@ -140,12 +161,16 @@ class Ui_MainWindow(object):
         self.DeviceSelectorBox.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Device", None))
         self.TareButton.setText(QCoreApplication.translate("MainWindow", u"Tare", None))
         self.CalibrateButton.setText(QCoreApplication.translate("MainWindow", u"Calibrate", None))
+        self.ReferenceValueBox.setPrefix(QCoreApplication.translate("MainWindow", u"Calibration value: ", None))
+        self.ReferenceValueBox.setSuffix(QCoreApplication.translate("MainWindow", u" N", None))
         self.QuickReadButton.setText(QCoreApplication.translate("MainWindow", u"Quick Read", None))
+        self.QuickReadOutputBox.setSuffix(QCoreApplication.translate("MainWindow", u" N", None))
         self.LongMeasurementLabel.setText(QCoreApplication.translate("MainWindow", u"Long measurement duration:", None))
-        self.MeasureDurationBox.setSuffix(QCoreApplication.translate("MainWindow", u" seconds", None))
+        self.MeasureDurationBox.setSuffix(QCoreApplication.translate("MainWindow", u" s", None))
         self.RunButton.setText(QCoreApplication.translate("MainWindow", u"Run Long Measurement", None))
         self.ShowButton.setText(QCoreApplication.translate("MainWindow", u"Show Plot", None))
         self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
+        self.ClearPlot.setText(QCoreApplication.translate("MainWindow", u"Clear Plot", None))
         self.ExitButton.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
     # retranslateUi
 
