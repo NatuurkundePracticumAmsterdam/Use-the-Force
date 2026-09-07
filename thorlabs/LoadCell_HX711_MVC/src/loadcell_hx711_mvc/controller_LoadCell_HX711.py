@@ -32,6 +32,12 @@ class ArduinoHX711Device:
 
         self.wait_until_ready()  # Call this method when the class is initialized to make sure that the Arduino does not receive commands before it has set itself up
 
+    def close(self):
+        """Close the connection to the Arduino."""
+        if self.device is not None:
+            self.device.close()  # Use the pyvisa close() method
+            self.device = None
+
     def wait_until_ready(self):
         """Method that waits until the Arduino has initialized (and tared) properly before python sends commands.
 

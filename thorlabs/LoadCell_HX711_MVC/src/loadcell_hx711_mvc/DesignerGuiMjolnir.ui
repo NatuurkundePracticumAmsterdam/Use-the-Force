@@ -19,6 +19,9 @@
      <layout class="QHBoxLayout" name="horizontalLayout_4">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
         <item>
          <widget class="QComboBox" name="DeviceSelectorBox">
           <property name="editable">
@@ -29,6 +32,22 @@
           </property>
           <property name="placeholderText">
            <string>Device</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="RefreshDevicesButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LayoutDirection::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Refresh Devices</string>
           </property>
          </widget>
         </item>
@@ -112,7 +131,14 @@
        </layout>
       </item>
       <item>
-       <widget class="PlotWidget" name="plot_widget"/>
+       <widget class="PlotWidget" name="plot_widget">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

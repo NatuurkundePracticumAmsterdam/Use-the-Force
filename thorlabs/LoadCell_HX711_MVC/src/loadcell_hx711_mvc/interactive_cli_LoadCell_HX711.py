@@ -1,3 +1,4 @@
+# This interactive CLI is mainly used for troubleshooting and is not maintained as well as the gui
 from importlib.metadata import version
 
 import matplotlib.pyplot as plt

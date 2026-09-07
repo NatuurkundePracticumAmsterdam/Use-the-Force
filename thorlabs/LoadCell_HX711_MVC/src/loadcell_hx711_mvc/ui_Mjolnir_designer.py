@@ -35,11 +35,23 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.verticalLayout_3 = QVBoxLayout()
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(-1, -1, 0, -1)
         self.DeviceSelectorBox = QComboBox(self.centralwidget)
         self.DeviceSelectorBox.setObjectName(u"DeviceSelectorBox")
         self.DeviceSelectorBox.setEditable(False)
 
         self.verticalLayout_3.addWidget(self.DeviceSelectorBox)
+
+        self.RefreshDevicesButton = QPushButton(self.centralwidget)
+        self.RefreshDevicesButton.setObjectName(u"RefreshDevicesButton")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.RefreshDevicesButton.sizePolicy().hasHeightForWidth())
+        self.RefreshDevicesButton.setSizePolicy(sizePolicy)
+        self.RefreshDevicesButton.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+
+        self.verticalLayout_3.addWidget(self.RefreshDevicesButton)
 
         self.TareButton = QPushButton(self.centralwidget)
         self.TareButton.setObjectName(u"TareButton")
@@ -84,6 +96,11 @@ class Ui_MainWindow(object):
 
         self.plot_widget = PlotWidget(self.centralwidget)
         self.plot_widget.setObjectName(u"plot_widget")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.plot_widget.sizePolicy().hasHeightForWidth())
+        self.plot_widget.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_4.addWidget(self.plot_widget)
 
@@ -170,6 +187,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.DeviceSelectorBox.setCurrentText("")
         self.DeviceSelectorBox.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Device", None))
+        self.RefreshDevicesButton.setText(QCoreApplication.translate("MainWindow", u"Refresh Devices", None))
         self.TareButton.setText(QCoreApplication.translate("MainWindow", u"Tare", None))
         self.CalibrateButton.setText(QCoreApplication.translate("MainWindow", u"Calibrate", None))
         self.ReferenceValueBox.setPrefix(QCoreApplication.translate("MainWindow", u"Calibration value: ", None))

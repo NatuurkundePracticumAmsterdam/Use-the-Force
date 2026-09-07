@@ -33,7 +33,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.experiment = None  # No experiment has been created yet, you have to connect to a device first
+        self.experiment = None  # No experiment has been created yet, you have to connect to a device first. Setting this to None now prevents some problems down the line
         # For the plot that will be made eventually:
         self.times = None
         self.forces = None
@@ -53,11 +53,14 @@ class UserInterface(QtWidgets.QMainWindow):
         # Add a functionality to the exit button
         self.ui.ExitButton.clicked.connect(self.close)
 
+        # Additional button to refresh all devices: allows you to connect to a device that wasn't plugged in yet (without having to close the gui!)
+        self.ui.RefreshDevicesButton.clicked.connect(self.refresh_devices)
+
         # List resources button:
         # Get all available resources:
         resources = model_list_resources()
         # Fill up the "choose device" menu:
-        # Just a filler before you actually select anything (this will be index 0)
+        # Just a filler before you actually select anything (this will be index 0) -> helps with making sure you close a device in use if you switch to a new device
         self.ui.DeviceSelectorBox.addItem("Select device...")
         # Add all real options into the "select device" box
         for resource in resources:
@@ -102,6 +105,70 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # Extra button just for fun: reset view for in case you get lost after zooming:
         self.ui.ResetViewButton.clicked.connect(self.reset_view)
+
+    @Slot()
+    def refresh_devices(self):
+        """Refresh the list of available devices."""
+        # A method that allows the user to look for new devices that weren't plugged in when the GUI was started up:
+        resources = model_list_resources()
+
+        # Define what we're currently connected to (if anything)
+        current_device = self.ui.DeviceSelectorBox.currentText()
+
+        # Need to now make sure that if we find a new device, that we don't end up triggering the DeviceSelectorBox "index changed" signal.
+        # This blocks signals that might be triggered by editing the list in the DeviceSelectorBox:
+        self.ui.DeviceSelectorBox.blockSignals(True)
+
+        # If we were connected to a device, but it is no longer available,
+        # close the old connection and reset the GUI.
+        # if self.experiment is not None means that an instance of MjolnirExperiment was made at some point. It could be that, at some point, it was plugged out, and so it cannot be found in the resource list anymore. In that case:
+        if self.experiment is not None and current_device not in resources:
+            self.experiment.close()  # Close the connection that you had
+            self.experiment = None  # Set the experiment state to None (because we are _not_ connected to anything right now)
+
+            self.ui.FirmwareLabel.setText(
+                f"Use-the-force Mjolnir {MJOLNIR_VERSION} | No device connected"
+            )
+
+            # Reset all buttons:
+            self.ui.TareButton.setEnabled(False)
+            self.ui.QuickReadButton.setEnabled(False)
+            self.ui.CalibrateButton.setEnabled(False)
+            self.ui.RunButton.setEnabled(False)
+            self.ui.SaveButton.setEnabled(False)
+            self.ui.ShowButton.setEnabled(False)
+            self.ui.ResetViewButton.setEnabled(False)
+
+            # Reset any measurements that may have happened
+            self.times = None
+            self.forces = None
+
+        # Now to update the list:
+        # Empty out the box and remove all possible selections:
+        self.ui.DeviceSelectorBox.clear()
+        # Now manually add the first "Select device..." option in again"
+        self.ui.DeviceSelectorBox.addItem("Select device...")
+
+        # Now add all resources into the list again
+        for resource in resources:
+            self.ui.DeviceSelectorBox.addItem(resource)
+
+        # If you were already connected to a device when clicking "refresh", this makes sure you stay connected (visually, at least)
+        if current_device in resources:
+            self.ui.DeviceSelectorBox.setCurrentText(current_device)
+        else:
+            self.ui.DeviceSelectorBox.setCurrentIndex(0)
+
+        # Now that all devices (and potentially a new device!) have been added to the list, we can unblock the signals and let the trigger work as intended:
+        self.ui.DeviceSelectorBox.blockSignals(False)
+
+    def closeEvent(self, event):  # closeEvent is a special Qt event-handler method
+        """Close the Arduino connection when Mjolnir exits."""
+        if self.experiment is not None:
+            # If you have triggered closeEvent, and you _do_ currently have a device connected, you will close the connection to the device
+            self.experiment.close()
+
+        event.accept()
 
     @Slot()
     def reset_view(self):
@@ -158,21 +225,48 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def device_selected(self):
         """After clicking "select a device", you actually connect to the Arduino and create an instance of MjolnirExperiment"""
-        if (
-            self.ui.DeviceSelectorBox.currentIndex() == 0
-        ):  # If index is 0, it means that you are still on "select device..." and have not selected anything yet
-            self.experiment = None
+        if self.ui.DeviceSelectorBox.currentIndex() == 0:
+            # If index is 0, it means that you are still on "select device..." and have not selected anything yet
+            if self.experiment is not None:
+                # This happens if you had selected something earlier but then clicked on "select device..." again afterwards. You close your connection to the device
+                self.experiment.close()
+                self.experiment = None
 
             self.ui.FirmwareLabel.setText(
                 f"Use-the-force Mjolnir {MJOLNIR_VERSION} | No device connected"
             )
 
+            # Reset all buttons:
             self.ui.TareButton.setEnabled(False)
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
+            self.ui.RunButton.setEnabled(False)
+            self.ui.SaveButton.setEnabled(False)
+            self.ui.ShowButton.setEnabled(False)
+            self.ui.ResetViewButton.setEnabled(False)
+
+            # Reset any measurements that may have happened
+            self.times = None
+            self.forces = None
 
             return
 
+        # If another device is already connected, close its connection first:
+        if self.experiment is not None:
+            self.experiment.close()
+            # Reset all buttons:
+            self.ui.TareButton.setEnabled(False)
+            self.ui.QuickReadButton.setEnabled(False)
+            self.ui.CalibrateButton.setEnabled(False)
+            self.ui.RunButton.setEnabled(False)
+            self.ui.SaveButton.setEnabled(False)
+            self.ui.ShowButton.setEnabled(False)
+            self.ui.ResetViewButton.setEnabled(False)
+            # Reset any measurements that may have happened
+            self.times = None
+            self.forces = None
+
+        # Now we can read out the port of the new device and start a fresh connection, with no other (older) devices connected
         portname = self.ui.DeviceSelectorBox.currentText()
 
         # Create an instance of MjolnirExperiment (i.e.: connect to the Arduino)

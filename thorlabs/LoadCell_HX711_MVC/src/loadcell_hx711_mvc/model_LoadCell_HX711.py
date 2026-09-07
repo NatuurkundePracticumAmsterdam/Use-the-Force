@@ -30,6 +30,10 @@ class MjolnirExperiment:
 
         self.device_identification = self.device.get_identification()
 
+    def close(self):
+        """Close the connection to the Arduino."""
+        self.device.close()
+
     def tare(self):
         """Tare the load cell.
 
