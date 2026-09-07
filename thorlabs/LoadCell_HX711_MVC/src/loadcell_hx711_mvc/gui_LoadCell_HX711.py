@@ -6,7 +6,13 @@ import pyqtgraph as pg
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QInputDialog
-from ui_Mjolnir_designer import Ui_MainWindow
+
+# Allow this script to be run either as a package via "Mjolnir"
+# or directly with "python gui_LoadCell_HX711.py".
+try:
+    from .ui_Mjolnir_designer import Ui_MainWindow
+except ImportError:
+    from ui_Mjolnir_designer import Ui_MainWindow
 
 MJOLNIR_VERSION = version("loadcell-hx711-mvc")
 
@@ -198,11 +204,8 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def pressed_clear(self):
-        """Clear has been pressed, the plot will clear, but the save button laso does not work anymore"""
+        """Clear the displayed plot."""
         self.ui.plot_widget.clear()
-        # self.ui.SaveButton.setEnabled(
-        #     False
-        # )  # Disable the save button since the plot has disappeared and you might have forgotten what you had just plotted, and also what you have saved
         self.ui.ResetViewButton.setEnabled(False)
 
     @Slot()

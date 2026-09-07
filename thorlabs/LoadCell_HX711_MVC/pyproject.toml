@@ -1,6 +1,6 @@
 [project]
 name = "loadcell-hx711-mvc"
-version = "0.5.1"
+version = "0.6.0"
 description = "Software for the Use-The-Force experiment using the Thorlabs setup -- MVC structure"
 readme = "README.md"
 authors = [
@@ -20,8 +20,9 @@ dependencies = [
 
 [project.scripts]
 loadcell-hx711-mvc = "loadcell_hx711_mvc:main"
-CLI = "loadcell_hx711_mvc.cli_LoadCell_HX711:cmd_group" # Type CLI + some subcommand into the terminal to execute ./src/loadcell_hx711_MVC/cli_LoadCell_HX711.py (and then the different functions indicate the available subcommands) -> Turns out not to be very useful for the way our experiment works
-Mjolnir = "loadcell_hx711_mvc.interactive_cli_LoadCell_HX711:main"
+# CLI = "loadcell_hx711_mvc.cli_LoadCell_HX711:cmd_group" # Type CLI + some subcommand into the terminal to execute ./src/loadcell_hx711_MVC/cli_LoadCell_HX711.py (and then the different functions indicate the available subcommands) -> Turns out not to be very useful for the way our experiment works
+CLI-Mjolnir = "loadcell_hx711_mvc.interactive_cli_LoadCell_HX711:main"
+Mjolnir = "loadcell_hx711_mvc.gui_LoadCell_HX711:main"
 
 [build-system]
 requires = ["uv_build>=0.9.26,<0.10.0"]
