@@ -209,15 +209,23 @@ class UserInterface(QtWidgets.QMainWindow):
         )
 
         if ok:
-            response = self.experiment.calibrate(
-                reference_force
-            )  # need to update this so that it actually responds to some sort of "successful" message. Check in .ino file to see what you get if things happen successfully
+            response = self.experiment.calibrate(reference_force)
 
-            # If calibration was successful, display the value used
-            self.ui.ReferenceValueBox.setValue(reference_force)
+            if (  # If calibration is successful, the Arduino print out "CALIBRATION COMPLETE" onto Serial Monitor. Can use this confirmation here as well
+                response.strip()
+                == "CALIBRATION COMPLETE"  # Can change this in controller so that it just returns something like "True" or something
+            ):  # Using .strip() here to make sure that any trailing newlines do not cause problems
+                # If calibration was successful, display the value used
+                self.ui.ReferenceValueBox.setValue(reference_force)
 
-            # Now that the calibration has happened successfully, the user can run a long measurement:
-            self.ui.RunButton.setEnabled(True)
+                # Now that the calibration has happened successfully, the user can run a long measurement:
+                self.ui.RunButton.setEnabled(True)
+            else:  # This happens if calibration were to fail somehow
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "Calibration failed",
+                    "The load cell could not be calibrated.",
+                )
 
 
 def main():
