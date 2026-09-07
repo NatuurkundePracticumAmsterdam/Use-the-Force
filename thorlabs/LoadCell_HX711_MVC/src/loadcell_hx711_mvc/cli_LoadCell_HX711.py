@@ -1,3 +1,4 @@
+# This cli file is not used! I have made a nicer interactive cli at interactive_cli_LoadCell_HX711.py
 import click
 
 from loadcell_hx711_mvc.model_LoadCell_HX711 import (

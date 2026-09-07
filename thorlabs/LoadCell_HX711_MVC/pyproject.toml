@@ -11,7 +11,9 @@ dependencies = [
     "click>=8.5.0",
     "matplotlib>=3.10.1",
     "numpy>=2.2.4",
+    "pyqtgraph>=0.14.0",
     "pyserial>=3.5",
+    "pyside6-essentials>=6.11.2",
     "pyvisa>=1.16.2",
     "pyvisa-py>=0.8.1",
 ]
@@ -24,3 +26,9 @@ Mjolnir = "loadcell_hx711_mvc.interactive_cli_LoadCell_HX711:main"
 [build-system]
 requires = ["uv_build>=0.9.26,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.poe.tasks.compile] # Useful: just type "poe compile" into the terminal in order to compile your .ui file
+shell = """
+pyside6-uic src/loadcell_hx711_mvc/DesignerGuiMjolnir.ui --output src/loadcell_hx711_mvc/ui_Mjolnir_designer.py
+"""
+interpreter = ["posix", "powershell"]
