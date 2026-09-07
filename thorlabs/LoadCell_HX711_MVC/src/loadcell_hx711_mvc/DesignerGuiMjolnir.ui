@@ -191,6 +191,16 @@
       </item>
      </layout>
     </item>
+    <item>
+     <widget class="QLabel" name="FirmwareLabel">
+      <property name="text">
+       <string>Firmware Information here</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">

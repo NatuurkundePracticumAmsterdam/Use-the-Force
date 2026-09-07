@@ -1,11 +1,14 @@
 import csv
 import sys
+from importlib.metadata import version
 
 import pyqtgraph as pg
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QInputDialog
 from ui_Mjolnir_designer import Ui_MainWindow
+
+MJOLNIR_VERSION = version("loadcell-hx711-mvc")
 
 from loadcell_hx711_mvc.model_LoadCell_HX711 import (
     MjolnirExperiment,
@@ -35,6 +38,11 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.plot_widget.setTitle("Force vs. Time")
 
         self.ui.plot_widget.showGrid(x=True, y=True)
+
+        # Show firmware label at the bottom
+        self.ui.FirmwareLabel.setText(
+            f"Use-the-force Mjolnir {MJOLNIR_VERSION} | No device connected"
+        )
 
         # Add a functionality to the exit button
         self.ui.ExitButton.clicked.connect(self.close)
@@ -133,6 +141,10 @@ class UserInterface(QtWidgets.QMainWindow):
         ):  # If index is 0, it means that you are still on "select device..." and have not selected anything yet
             self.experiment = None
 
+            self.ui.FirmwareLabel.setText(
+                f"Use-the-force Mjolnir {MJOLNIR_VERSION} | No device connected"
+            )
+
             self.ui.TareButton.setEnabled(False)
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
@@ -143,6 +155,12 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # Create an instance of MjolnirExperiment (i.e.: connect to the Arduino)
         self.experiment = MjolnirExperiment(portname)
+
+        # Print the firmware version in the label
+        self.ui.FirmwareLabel.setText(
+            f"Use-the-force Mjolnir {MJOLNIR_VERSION} | "
+            f"{self.experiment.device_identification}"
+        )
 
         # Make the Tare, Quick Read, and Calibrate buttons clickable
         self.ui.TareButton.setEnabled(True)

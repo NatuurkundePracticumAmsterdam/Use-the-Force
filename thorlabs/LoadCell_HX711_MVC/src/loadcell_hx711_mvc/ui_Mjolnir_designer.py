@@ -141,6 +141,12 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout)
 
+        self.FirmwareLabel = QLabel(self.centralwidget)
+        self.FirmwareLabel.setObjectName(u"FirmwareLabel")
+        self.FirmwareLabel.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
+
+        self.verticalLayout.addWidget(self.FirmwareLabel)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -172,5 +178,6 @@ class Ui_MainWindow(object):
         self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
         self.ClearPlot.setText(QCoreApplication.translate("MainWindow", u"Clear Plot", None))
         self.ExitButton.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
+        self.FirmwareLabel.setText(QCoreApplication.translate("MainWindow", u"Firmware Information here", None))
     # retranslateUi
 
