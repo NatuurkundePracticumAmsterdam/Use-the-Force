@@ -128,6 +128,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.SaveButton)
 
+        self.ResetViewButton = QPushButton(self.centralwidget)
+        self.ResetViewButton.setObjectName(u"ResetViewButton")
+
+        self.horizontalLayout.addWidget(self.ResetViewButton)
+
         self.ClearPlot = QPushButton(self.centralwidget)
         self.ClearPlot.setObjectName(u"ClearPlot")
 
@@ -176,6 +181,7 @@ class Ui_MainWindow(object):
         self.RunButton.setText(QCoreApplication.translate("MainWindow", u"Run Long Measurement", None))
         self.ShowButton.setText(QCoreApplication.translate("MainWindow", u"Show Plot", None))
         self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
+        self.ResetViewButton.setText(QCoreApplication.translate("MainWindow", u"Reset View", None))
         self.ClearPlot.setText(QCoreApplication.translate("MainWindow", u"Clear Plot", None))
         self.ExitButton.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.FirmwareLabel.setText(QCoreApplication.translate("MainWindow", u"Firmware Information here", None))

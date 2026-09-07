@@ -176,6 +176,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="ResetViewButton">
+        <property name="text">
+         <string>Reset View</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="ClearPlot">
         <property name="text">
          <string>Clear Plot</string>

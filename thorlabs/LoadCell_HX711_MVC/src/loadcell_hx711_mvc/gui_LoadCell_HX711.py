@@ -66,10 +66,12 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.QuickReadButton.setEnabled(False)
         # Also make the "run long measurement", show, and save plots unavailable until you have actually calibrated:
         self.ui.RunButton.setEnabled(False)
-        # Don't have the "show plot" button pop up until you have finished running a long measurement:
+        # Don't have the "save plot" button pop up until you have finished running a long measurement:
         self.ui.SaveButton.setEnabled(False)
-        # Don't have the "save plot" button pop up until you have created a plot:
+        # Don't have the "show plot" button pop up until you have created a plot:
         self.ui.ShowButton.setEnabled(False)
+        # Don't have the "reset view" button pop up until you created a plot:
+        self.ui.ResetViewButton.setEnabled(False)
 
         # Once tare becomes clickable, it has this feature:
         self.ui.TareButton.clicked.connect(self.tare)
@@ -91,6 +93,15 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # Once you have made a nice plot, you can save it:
         self.ui.SaveButton.clicked.connect(self.save_data)
+
+        # Extra button just for fun: reset view for in case you get lost after zooming:
+        self.ui.ResetViewButton.clicked.connect(self.reset_view)
+
+    @Slot()
+    def reset_view(self):
+        """For if you have zoomed around too much and don't know how to get back"""
+        # Reset the axes to what they were initially:
+        self.ui.plot_widget.autoRange()
 
     @Slot()
     def save_data(self):
@@ -129,8 +140,13 @@ class UserInterface(QtWidgets.QMainWindow):
             self.times,
             self.forces,
         )
-        # If you have plotted something, you are allowed to save:
+
+        # Set the axes to the automatically determined range
+        self.ui.plot_widget.autoRange()
+
+        # If you have plotted something, you are allowed to save/reset the view:
         self.ui.SaveButton.setEnabled(True)
+        self.ui.ResetViewButton.setEnabled(True)
 
     # This activates once you click a port in the "select device" dropdown menu
     @Slot()
@@ -187,6 +203,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # self.ui.SaveButton.setEnabled(
         #     False
         # )  # Disable the save button since the plot has disappeared and you might have forgotten what you had just plotted, and also what you have saved
+        self.ui.ResetViewButton.setEnabled(False)
 
     @Slot()
     def tare(self):
