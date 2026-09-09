@@ -4,7 +4,7 @@ from importlib.metadata import version
 
 import pyqtgraph as pg
 from PySide6 import QtWidgets
-from PySide6.QtCore import Slot
+from PySide6.QtCore import QLocale, Slot
 from PySide6.QtWidgets import QInputDialog
 
 # Allow this script to be run either as a package via "Mjolnir"
@@ -212,6 +212,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.plot_widget.plot(
             self.times,
             self.forces,
+            pen=pg.mkPen("b", width=3),  # Blue colour for line
         )
 
         # Set the axes to the automatically determined range
@@ -296,6 +297,13 @@ class UserInterface(QtWidgets.QMainWindow):
         # A measurement has now been completed, so the plot can be shown
         self.ui.ShowButton.setEnabled(True)
 
+        # Have a little dialog box pop up when the measurement is done:
+        QtWidgets.QMessageBox.information(
+            self,
+            "Measurement complete",
+            f"The {duration} s measurement has finished. You can now view and save the data.",
+        )
+
     @Slot()
     def pressed_clear(self):
         """Clear the displayed plot."""
@@ -319,25 +327,36 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def calibrate(self):
         """Calibrate the sensor. You do this by placing an object with a known weight (gravitational force) onto the sensor and typing in the force of the reference object"""
-        reference_force, ok = QInputDialog.getDouble(
-            self,
-            "Calibration",
-            "Place a reference load on the sensor and enter the reference force in Newton:",
-        )
 
-        if ok:
+        # Make a dialog box that pops up when you click calibrate
+        dialog = QInputDialog(self)
+        dialog.setDoubleRange(0.0, 1000000.0)  # Some arbitary range
+        # Allow users to type up to 6 decimals, though the load cell definitely does not have this sensitivty. Better to keep it at much fewer decimals than 6:
+        dialog.setDoubleDecimals(6)
+        dialog.setWindowTitle("Calibration")
+        dialog.setLabelText(
+            "Place a reference load on the sensor and enter the reference force in Newton:"
+        )
+        dialog.setInputMode(QInputDialog.DoubleInput)
+        dialog.setDoubleValue(0.0)  # Default value in input box
+
+        # Make it so that decimals are separated using a dot instead of a comma! Important for (language) consistency:
+        dialog.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+
+        if dialog.exec():
+            reference_force = dialog.doubleValue()
+
             response = self.experiment.calibrate(reference_force)
 
-            if (  # If calibration is successful, the Arduino print out "CALIBRATION COMPLETE" onto Serial Monitor. Can use this confirmation here as well
-                response.strip()
-                == "CALIBRATION COMPLETE"  # Can change this in controller so that it just returns something like "True" or something
-            ):  # Using .strip() here to make sure that any trailing newlines do not cause problems
-                # If calibration was successful, display the value used
+            # If calibration is successful, the Arduino print out "CALIBRATION COMPLETE" onto Serial Monitor. Can use this confirmation here as well
+            # Use strip() to make sure that any trailing newlines or spaces do not cause problems
+            if response.strip() == "CALIBRATION COMPLETE":
+                # If calibration was successful, display the value that was used to calibrate:
                 self.ui.ReferenceValueBox.setValue(reference_force)
-
-                # Now that the calibration has happened successfully, the user can run a long measurement:
+                # Now enable the run button so the user can run a long measurement:
                 self.ui.RunButton.setEnabled(True)
-            else:  # This happens if calibration were to fail somehow
+            # If the calibration failed for whatever reason, return a warning message
+            else:
                 QtWidgets.QMessageBox.warning(
                     self,
                     "Calibration failed",

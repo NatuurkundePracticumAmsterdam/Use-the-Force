@@ -198,7 +198,7 @@ class Ui_MainWindow(object):
         self.MeasureDurationBox.setSuffix(QCoreApplication.translate("MainWindow", u" s", None))
         self.RunButton.setText(QCoreApplication.translate("MainWindow", u"Run Long Measurement", None))
         self.ShowButton.setText(QCoreApplication.translate("MainWindow", u"Show Plot", None))
-        self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
+        self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save CSV", None))
         self.ResetViewButton.setText(QCoreApplication.translate("MainWindow", u"Reset View", None))
         self.ClearPlot.setText(QCoreApplication.translate("MainWindow", u"Clear Plot", None))
         self.ExitButton.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
