@@ -301,7 +301,9 @@ class UserInterface(QtWidgets.QMainWindow):
         duration = self.ui.MeasureDurationBox.value()
 
         self.times, self.forces = (
-            self.experiment.measure_over_time_with_single_measurements(duration)
+            self.experiment.measure_over_time_with_single_measurements(
+                duration=duration, interval=0.01
+            )
         )
 
         # A measurement has now been completed, so the plot can be shown

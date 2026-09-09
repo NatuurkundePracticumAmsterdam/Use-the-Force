@@ -106,7 +106,7 @@ class MjolnirExperiment:
         return average_measured_force, average_measured_force_err
 
     def measure_over_time_with_uncertainty(
-        self, duration, interval=0.1, number_of_measurements=10
+        self, duration, interval=0.01, number_of_measurements=10
     ):  # This method can be used by the CLI. Here you have to define a fixed duration, so you cannot "start" and "stop" a measurement live.
         """Take repeated averaged force measurements over a fixed duration.
 
@@ -144,7 +144,7 @@ class MjolnirExperiment:
             np.array(uncertainties),
         )
 
-    def measure_over_time_with_single_measurements(self, duration, interval=0.1):
+    def measure_over_time_with_single_measurements(self, duration, interval=0.01):
         times = []
         forces = []
 
@@ -165,7 +165,7 @@ class MjolnirExperiment:
             times.append(current_time)
             forces.append(force)
 
-            # Schedule the next measurement
+            # Schedule the next measurement: this ensures that measurement don't pile up or lag behind too much -> keep in mind that there will be a slight fluctuation between time steps! See test results below in execution block
             next_measurement_time += interval
 
             # Stop after the requested duration
@@ -186,32 +186,36 @@ if __name__ == "__main__":
 
     experiment = MjolnirExperiment("ASRL/dev/cu.usbmodem1101::INSTR")
 
-    # Pen cap mass: 2.277 g (0.02277 N); full red pen mass: 8.208 g; blue pen: 6.479 g; thin wire: 0.338 g (quick: g to N -> mass/1000 * 9.81)
-    pen_cap_mass = 2.277  # grams
-    reference_force = pen_cap_mass / 1000.0 * 9.81
+    # Some tests to see how fast the communication is happening and what the sampling rate is:
+    times, forces = experiment.measure_over_time_with_single_measurements(
+        duration=10, interval=0.01
+    )
 
-    print(experiment.take_single_measurement())
-    print(experiment.take_average_measurement(20))
+    # We have run a measurement for 10 seconds, choosing an interval of 0.01 seconds per measurement. This means that we should be conducting 1000 measurements in total -> sampling rate of 100 Hz
+    print("Sampling experiments: ")
+    print(
+        f"Number of measurements: {len(times)}"
+    )  # This is how many measurements were actually performed
+    print(
+        f"Effective sampling rate: {len(times) / times[-1]:.1f} Hz"
+    )  # This is the effective sampling rate. If this is actually 100 Hz, this is a good sign -> Note, this is NOT the HX711 sampling rate, this is only the effective sampling rate that we get when we run everything in python
 
-    experiment.tare()
+    # Check spacing in time: do we measure at equal time intervals?
+    dt = np.diff(times)
+    print(
+        f"Mean dt: {np.mean(dt):.4f} s"
+    )  # On average, there should be 0.01 seconds between each measurement
+    print(
+        f"Median dt: {np.median(dt):.4f} s"
+    )  # The median will tell us a bit more about the distribution between measurements (in time) -> For me, this returned a median of 0.008 seconds -> this means that there is a slight shift
+    print(
+        f"Minimum dt: {np.min(dt):.4f} s"
+    )  # How big is the fluctuation in time? For me, min time between time measurements was 0.0078 (slightly shorter than we want)
+    print(
+        f"Maximum dt: {np.max(dt):.4f} s"
+    )  # Max time between time measuremenst was 0.0125 seconds (slightly longer than we want)
+    # So it seems, from this test, that we have a time uncertainty of the order of 0.002 seconds, if we have timesteps of 0.01 seconds. This uncertainty may be asymmetric (i.e. uncertainty of + 0.0025 and - 0.0022). I think this is acceptable for a timestep of 0.01 seconds
 
-    print(experiment.take_single_measurement())
-    print(experiment.take_average_measurement(20))
-
-    print("Place the reference mass on the load cell")
-    input("Press Enter when the mass is in its place ...")
-
-    experiment.calibrate(reference_force)
-
-    print(experiment.take_single_measurement())
-    print(experiment.take_average_measurement(20))
-
-    input("Now we can start a series of measurements. Press Enter when you are ready")
-    for i in range(100):
-        print(experiment.take_single_measurement())
-
-    # times, forces, uncertainties = experiment.measure_over_time(10)
-
-    # print(times)
-    # print(forces)
-    # print(uncertainties)
+    print()
+    print("See if successive force values are repeated")
+    print(forces[:30])
