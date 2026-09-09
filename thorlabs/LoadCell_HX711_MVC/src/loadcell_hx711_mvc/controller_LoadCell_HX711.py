@@ -83,21 +83,66 @@ class ArduinoHX711Device:
         response = self.device.read()
         return response
 
+    # def measure(self): -> This is now OBSOLETE, since we are using continuous output. See new version using continuous readout architecture below:
+    #     """Read out mass measurement.
+
+    #     Returns:
+    #         Float: Mass as measured by load cell. The units of this measurement are the same as the units that were used during calibration.
+    #     """
+    #     self.device.write("MEASURE?")
+    #     response = self.device.read()
+    #     return float(response)
+
+    # Meausring using continuous readout:
     def measure(self):
-        """Read out mass measurement.
+        """Read a single measurement from the continuous data stream.
 
         Returns:
-            Float: Mass as measured by load cell. The units of this measurement are the same as the units that were used during calibration.
+                    Float: Load cell measurement. The units of this measurement are the same as the units that were used during calibration.
         """
-        self.device.write("MEASURE?")
+        return self.read_measurement()
+
+    # Implemented continuous readout:
+    def start_measurement(self):
+        """Start continuous measurement on the Arduino.
+
+        Returns:
+            String: Confirmation that continuous measurement has started.
+        """
+        self.device.write("START")  # Give command to turn on "measuring" state
         response = self.device.read()
-        return float(response)
+        return response
+
+    def stop_measurement(self):
+        """Stop continuous measurement on the Arduino.
+
+        Returns:
+            String: Confirmation that continuous measurement has stopped.
+        """
+        self.device.write("STOP")  # Give command to turn off "measuring" state
+        response = self.device.read()
+        return response
+
+    # Method to read measurements using a continuous output architecture
+    def read_measurement(self):
+        """Read the next measurement from the continuous data stream.
+
+        Returns:
+            Float: The next force measurement.
+        """
+        while True:
+            response = self.device.read()
+
+            if response.startswith(
+                "DATA,"
+            ):  # Need to have this condition for in case the Arduino returns something that isn't data (like info about taring or calibrating). We only want to read data here.
+                return float(response.split(",", 1)[1])
 
 
 if __name__ == "__main__":
     print(list_resources())
 
-    # my_load_cell = ArduinoHX711Device("ASRL/dev/cu.usbmodem1101::INSTR")
+    my_load_cell = ArduinoHX711Device("ASRL/dev/cu.usbmodem1101::INSTR")
 
     # print(my_load_cell.tare())
     # print(my_load_cell.measure())
@@ -105,3 +150,14 @@ if __name__ == "__main__":
     # print(my_load_cell.calibrate(2.277))
 
     # print(my_load_cell.measure())
+
+    print(my_load_cell.get_identification())
+
+    print(my_load_cell.start_measurement())
+
+    for _ in range(20):
+        print(my_load_cell.read_measurement())
+
+    print(my_load_cell.stop_measurement())
+
+    my_load_cell.close()

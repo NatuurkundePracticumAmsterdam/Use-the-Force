@@ -68,14 +68,15 @@ class MjolnirExperiment:
     def take_average_measurement(
         self, number_of_measurements=2
     ):  # Have at least two measurements, since to average and get a meaningful uncertainty you need at least two measurements
-        """Iteratively perform many measurements over the same force. This method computes the average of that measurement, and additionally includes an uncertainty on that measurement determined by err = std / sqrt(N).
+        """Average a number of consecutive measurements.
 
         Args:
-            number_of_measurements (int, optional): The number of measurements you want to average over. The more, the better the uncertainty. Defaults to 2.
+            number_of_measurements (int): Number of consecutive measurements
+                used to calculate the average.
 
         Returns:
             average_measured_force (float): Average measured force.
-            average_measured_force_err (float): Uncertainty on average measured force.
+            average_measured_force_err (float): Standard uncertainty on the mean.
         """
 
         if number_of_measurements < 2:
@@ -144,48 +145,99 @@ class MjolnirExperiment:
     #         np.array(uncertainties),
     #     )
 
+    # def measure_over_time_with_average_measurements( # -> This method is now OBSOLETE with the implementation of continuous output architecture. See updated method below
+    #     self, duration, interval=0.1, number_of_measurements=4
+    # ):
+    #     """Measure a force over time using averaged measurements. At each timestamp, the force is measured repeatedly and subsequently averaged. The uncertainty on this measured average is std / sqrt(N), where N is the number of measurements per timestamp.
+
+    #     Args:
+    #         duration (float): The time duration of the total measurement in seconds.
+    #         interval (float, optional): The time interval between single measurements.
+    #         number_of_measurements (int, optional): Number of measurements you want to take before averaging. Defaults to 4.
+
+    #     Returns:
+    #         times (numpy array of floats): An array of timestamps (in s).
+    #         forces (numpy array of floats): An array of average forces per timestamp (in N)
+    #         uncertainies (numpy array of floats): An array of uncertainties on the average forces (in N).
+    #     """
+    #     times = []
+    #     forces = []
+    #     uncertainties = []
+
+    #     start_time = time.perf_counter()
+    #     next_measurement_time = start_time
+
+    #     while True:
+    #         # Wait until the scheduled measurement time
+    #         while time.perf_counter() < next_measurement_time:
+    #             time.sleep(0.001)
+
+    #         # Take several measurements and calculate their average
+    #         force, uncertainty = self.take_average_measurement(number_of_measurements)
+
+    #         # Record the actual time
+    #         current_time = time.perf_counter() - start_time
+
+    #         times.append(current_time)
+    #         forces.append(force)
+    #         uncertainties.append(uncertainty)
+
+    #         # Schedule the next averaged measurement
+    #         next_measurement_time += interval
+
+    #         if current_time >= duration:
+    #             break
+
+    #     return (
+    #         np.array(times),
+    #         np.array(forces),
+    #         np.array(uncertainties),
+    #     )
+
     def measure_over_time_with_average_measurements(
-        self, duration, interval=0.1, number_of_measurements=4
+        self, duration, number_of_measurements=4
     ):
-        """Measure a force over time using averaged measurements. At each timestamp, the force is measured repeatedly and subsequently averaged. The uncertainty on this measured average is std / sqrt(N), where N is the number of measurements per timestamp.
+        """Measure a force over time using consecutive averaged measurements.
+
+        The Arduino continuously acquires measurements from the HX711.
+        Consecutive measurements are grouped into sets and averaged.
 
         Args:
-            duration (float): The time duration of the total measurement in seconds.
-            interval (float, optional): The time interval between single measurements.
-            number_of_measurements (int, optional): Number of measurements you want to take before averaging. Defaults to 4.
+            duration (float): Total measurement duration in seconds.
+            number_of_measurements (int): Number of consecutive measurements
+                used to calculate each average.
 
         Returns:
-            times (numpy array of floats): An array of timestamps (in s).
-            forces (numpy array of floats): An array of average forces per timestamp (in N)
-            uncertainies (numpy array of floats): An array of uncertainties on the average forces (in N).
+            times (numpy.ndarray): Timestamps in seconds.
+            forces (numpy.ndarray): Average measured forces.
+            uncertainties (numpy.ndarray): Standard uncertainties on the mean.
         """
+
         times = []
         forces = []
         uncertainties = []
 
+        # Start the continuous stream of measurements.
+        self.device.start_measurement()
+
         start_time = time.perf_counter()
-        next_measurement_time = start_time
 
         while True:
-            # Wait until the scheduled measurement time
-            while time.perf_counter() < next_measurement_time:
-                time.sleep(0.001)
-
-            # Take several measurements and calculate their average
+            # Take several consecutive measurements and calculate their average.
             force, uncertainty = self.take_average_measurement(number_of_measurements)
 
-            # Record the actual time
+            # Record the time at which the average was completed.
             current_time = time.perf_counter() - start_time
 
             times.append(current_time)
             forces.append(force)
             uncertainties.append(uncertainty)
 
-            # Schedule the next averaged measurement
-            next_measurement_time += interval
-
             if current_time >= duration:
                 break
+
+        # Stop the continuous stream of measurements.
+        self.device.stop_measurement()
 
         return (
             np.array(times),
@@ -193,73 +245,112 @@ class MjolnirExperiment:
             np.array(uncertainties),
         )
 
-    def test_average_measurement_time(
-        self, number_of_measurements_list=(1, 2, 4, 5, 8, 10), repetitions=50
-    ):
-        """Diagnostic method to see how long it takes to take average measurements
+    # def test_average_measurement_time(
+    #     self, number_of_measurements_list=(1, 2, 4, 5, 8, 10), repetitions=50
+    # ):
+    #     """Diagnostic method to see how long it takes to take average measurements
+
+    #     Args:
+    #         number_of_measurements_list (tuple, optional): A list specifying how many measurements to take before computing an average. Defaults to (1, 2, 4, 5, 8, 10).
+    #         repetitions (int, optional): How many times to repeat the test for each number of measurements for an average. This helps give a distribution of how long it will take to compute an average. Defaults to 20.
+    #     """
+    #     for n in number_of_measurements_list:
+    #         durations = []
+
+    #         for _ in range(repetitions):
+    #             start_time = time.perf_counter()
+
+    #             if n == 1:
+    #                 self.take_single_measurement()
+    #             else:
+    #                 self.take_average_measurement(n)
+
+    #             elapsed_time = time.perf_counter() - start_time
+    #             durations.append(elapsed_time)
+
+    #         print(
+    #             f"N = {n:2d}: "
+    #             f"mean = {np.mean(durations):.4f} s ({1 / np.mean(durations):.1f} Hz), "
+    #             f"min = {np.min(durations):.4f} s, "
+    #             f"max = {np.max(durations):.4f} s"
+    #         )
+
+    # def measure_over_time_with_single_measurements(self, duration, interval=0.01): # -> This version is OBSOLETE now that we have implemented continuous output architecture. See updated method below.
+    #     """Measure a force over time using single measurements. This method repeatedly measures the load on the load cell for a fixed duration of time, with a specific time interval between measurements.
+
+    #     Args:
+    #         duration (float): The time duration of the total measurement in seconds.
+    #         interval (float, optional): The time interval between single measurements. Defaults to 0.01.
+
+    #     Returns:
+    #         times (numpy array of floats): Timestamps (in seconds) at which each single measurement was performed.
+    #         foreces (numpy array of floats): array of forces (in Newtons) for each measurement in the series.
+    #     """
+    #     times = []
+    #     forces = []
+
+    #     start_time = time.perf_counter()
+    #     next_measurement_time = start_time
+
+    #     while True:
+    #         # Wait until the scheduled measurement time -- This is to make sure that each force/time measurement is approximately evenly spaced in time
+    #         while time.perf_counter() < next_measurement_time:
+    #             time.sleep(0.001)
+
+    #         # Take the measurement
+    #         force = self.take_single_measurement()
+
+    #         # Record the actual measurement time
+    #         current_time = time.perf_counter() - start_time
+
+    #         times.append(current_time)
+    #         forces.append(force)
+
+    #         # Schedule the next measurement: this ensures that measurement don't pile up or lag behind too much -> keep in mind that there will be a slight fluctuation between time steps! See test results below in execution block
+    #         next_measurement_time += interval
+
+    #         # Stop after the requested duration
+    #         if current_time >= duration:
+    #             break
+
+    #     return np.array(times), np.array(forces)
+
+    # New method implemented as part of continuous output architecture:
+    def measure_over_time_with_single_measurements(self, duration):
+        """Measure a force continuously for a fixed duration.
+
+        The Arduino continuously acquires measurements from the HX711.
+        This method reads each new measurement as it becomes available.
 
         Args:
-            number_of_measurements_list (tuple, optional): A list specifying how many measurements to take before computing an average. Defaults to (1, 2, 4, 5, 8, 10).
-            repetitions (int, optional): How many times to repeat the test for each number of measurements for an average. This helps give a distribution of how long it will take to compute an average. Defaults to 20.
-        """
-        for n in number_of_measurements_list:
-            durations = []
-
-            for _ in range(repetitions):
-                start_time = time.perf_counter()
-
-                if n == 1:
-                    self.take_single_measurement()
-                else:
-                    self.take_average_measurement(n)
-
-                elapsed_time = time.perf_counter() - start_time
-                durations.append(elapsed_time)
-
-            print(
-                f"N = {n:2d}: "
-                f"mean = {np.mean(durations):.4f} s ({1 / np.mean(durations):.1f} Hz), "
-                f"min = {np.min(durations):.4f} s, "
-                f"max = {np.max(durations):.4f} s"
-            )
-
-    def measure_over_time_with_single_measurements(self, duration, interval=0.01):
-        """Measure a force over time using single measurements. This method repeatedly measures the load on the load cell for a fixed duration of time, with a specific time interval between measurements.
-
-        Args:
-            duration (float): The time duration of the total measurement in seconds.
-            interval (float, optional): The time interval between single measurements. Defaults to 0.01.
+            duration (float): Total measurement duration in seconds.
 
         Returns:
-            times (numpy array of floats): Timestamps (in seconds) at which each single measurement was performed.
-            foreces (numpy array of floats): array of forces (in Newtons) for each measurement in the series.
+            times (numpy.ndarray): Measurement timestamps in seconds.
+            forces (numpy.ndarray): Measured forces.
         """
+
         times = []
         forces = []
 
+        # Start the continuous stream of outputs:
+        self.device.start_measurement()
+
         start_time = time.perf_counter()
-        next_measurement_time = start_time
 
         while True:
-            # Wait until the scheduled measurement time -- This is to make sure that each force/time measurement is approximately evenly spaced in time
-            while time.perf_counter() < next_measurement_time:
-                time.sleep(0.001)
-
-            # Take the measurement
             force = self.take_single_measurement()
 
-            # Record the actual measurement time
             current_time = time.perf_counter() - start_time
 
             times.append(current_time)
             forces.append(force)
 
-            # Schedule the next measurement: this ensures that measurement don't pile up or lag behind too much -> keep in mind that there will be a slight fluctuation between time steps! See test results below in execution block
-            next_measurement_time += interval
-
-            # Stop after the requested duration
             if current_time >= duration:
                 break
+
+        # Stop the continuous stream of outputs:
+        self.device.stop_measurement()
 
         return np.array(times), np.array(forces)
 
@@ -278,39 +369,61 @@ if __name__ == "__main__":
     experiment = MjolnirExperiment("ASRL/dev/cu.usbmodem1101::INSTR")
 
     # Some tests to see how fast the communication is happening and what the sampling rate is:
-    times, forces = experiment.measure_over_time_with_single_measurements(
-        duration=10, interval=0.01
-    )
+    times, forces = experiment.measure_over_time_with_single_measurements(duration=10)
 
-    # We have run a measurement for 10 seconds, choosing an interval of 0.01 seconds per measurement. This means that we should be conducting 1000 measurements in total -> sampling rate of 100 Hz
-    print("Sampling experiments: ")
+    # The Arduino/HX711 continuously acquires measurements.
+    # Python reads each new measurement as it becomes available.
+    # Therefore, the sampling rate is determined primarily by the HX711,
+    # rather than by a Python-defined measurement interval.
+
+    print("Sampling experiment: ")
     print(
         f"Number of measurements: {len(times)}"
-    )  # This is how many measurements were actually performed
+    )  # Number of measurements actually received from the HX711
+
     print(
         f"Effective sampling rate: {len(times) / times[-1]:.1f} Hz"
-    )  # This is the effective sampling rate. If this is actually 100 Hz, this is a good sign -> Note, this is NOT the HX711 sampling rate, this is only the effective sampling rate that we get when we run everything in python
+    )  # Effective rate observed by Python
 
     # Check spacing in time: do we measure at equal time intervals?
     dt = np.diff(times)
     print(
         f"Mean dt: {np.mean(dt):.4f} s"
-    )  # On average, there should be 0.01 seconds between each measurement
+    )  # Mean time between consecutive measurements received from the Arduino
     print(
         f"Median dt: {np.median(dt):.4f} s"
-    )  # The median will tell us a bit more about the distribution between measurements (in time) -> For me, this returned a median of 0.008 seconds -> this means that there is a slight shift
-    print(
-        f"Minimum dt: {np.min(dt):.4f} s"
-    )  # How big is the fluctuation in time? For me, min time between time measurements was 0.0078 (slightly shorter than we want)
-    print(
-        f"Maximum dt: {np.max(dt):.4f} s"
-    )  # Max time between time measuremenst was 0.0125 seconds (slightly longer than we want)
-    # So it seems, from this test, that we have a time uncertainty of the order of 0.002 seconds, if we have timesteps of 0.01 seconds. This uncertainty may be asymmetric (i.e. uncertainty of + 0.0025 and - 0.0022). I think this is acceptable for a timestep of 0.01 seconds
+    )  # The median will tell us a bit more about the distribution between measurements (in time)
+    print(f"Minimum dt: {np.min(dt):.4f} s")  # How big is the fluctuation in time?
+    print(f"Maximum dt: {np.max(dt):.4f} s")  # Max time between time measurements
 
     print()
     print("See if successive force values are repeated")
     print(forces[:30])
 
+    # print()
+    # print("Tests to see how long it takes to compute averages:")
+    # experiment.test_average_measurement_time()
+
     print()
-    print("Tests to see how long it takes to compute averages:")
-    experiment.test_average_measurement_time()
+    # Tests to see how well we can average now with continuous output architecture:
+    print("Tests to see how well averaging works now:")
+    times, forces, uncertainties = (
+        experiment.measure_over_time_with_average_measurements(
+            duration=10,
+            number_of_measurements=4,
+        )
+    )
+
+    print("Averaging experiment:")
+    print(f"Number of averaged measurements: {len(times)}")
+    print(f"Effective rate: {len(times) / times[-1]:.1f} Hz")
+    print(f"Mean dt: {np.mean(np.diff(times)):.4f} s")
+    print(f"Median dt: {np.median(np.diff(times)):.4f} s")
+
+    print()
+    print("Forces:")
+    print(forces)
+
+    print()
+    print("Uncertainties:")
+    print(uncertainties)
