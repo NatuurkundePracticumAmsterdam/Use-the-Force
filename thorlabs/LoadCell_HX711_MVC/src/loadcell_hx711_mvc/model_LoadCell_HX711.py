@@ -105,46 +105,135 @@ class MjolnirExperiment:
 
         return average_measured_force, average_measured_force_err
 
-    def measure_over_time_with_uncertainty(
-        self, duration, interval=0.01, number_of_measurements=10
-    ):  # This method can be used by the CLI. Here you have to define a fixed duration, so you cannot "start" and "stop" a measurement live.
-        """Take repeated averaged force measurements over a fixed duration.
+    # def measure_over_time_with_uncertainty(
+    #     self, duration, interval=0.01, number_of_measurements=10
+    # ):  # This method can be used by the CLI. Here you have to define a fixed duration, so you cannot "start" and "stop" a measurement live.
+    #     """Take repeated averaged force measurements over a fixed duration.
+
+    #     Args:
+    #         duration (float): Total measurement duration in seconds.
+    #         interval (float, optional): Time between measurements in seconds.
+    #             Defaults to 0.1.
+    #         number_of_measurements (int, optional): Number of measurements
+    #             used to calculate each average. Defaults to 10.
+
+    #     Returns:
+    #         times (numpy.ndarray): Measurement times in seconds.
+    #         forces (numpy.ndarray): Average measured forces in newtons.
+    #         uncertainties (numpy.ndarray): Statistical uncertainties in newtons.
+    #     """
+    #     times = []
+    #     forces = []
+    #     uncertainties = []
+
+    #     start_time = time.time()
+
+    #     while time.time() - start_time < duration:
+    #         force, uncertainty = self.take_average_measurement(
+    #             number_of_measurements
+    #         )  # At this timestamp: compute average force
+    #         current_time = time.time() - start_time
+    #         times.append(current_time)
+    #         forces.append(force)
+    #         uncertainties.append(uncertainty)
+
+    #         time.sleep(interval)  # go to next timestamp
+    #     return (
+    #         np.array(times),
+    #         np.array(forces),
+    #         np.array(uncertainties),
+    #     )
+
+    def measure_over_time_with_average_measurements(
+        self, duration, interval=0.1, number_of_measurements=4
+    ):
+        """Measure a force over time using averaged measurements. At each timestamp, the force is measured repeatedly and subsequently averaged. The uncertainty on this measured average is std / sqrt(N), where N is the number of measurements per timestamp.
 
         Args:
-            duration (float): Total measurement duration in seconds.
-            interval (float, optional): Time between measurements in seconds.
-                Defaults to 0.1.
-            number_of_measurements (int, optional): Number of measurements
-                used to calculate each average. Defaults to 10.
+            duration (float): The time duration of the total measurement in seconds.
+            interval (float, optional): The time interval between single measurements.
+            number_of_measurements (int, optional): Number of measurements you want to take before averaging. Defaults to 4.
 
         Returns:
-            times (numpy.ndarray): Measurement times in seconds.
-            forces (numpy.ndarray): Average measured forces in newtons.
-            uncertainties (numpy.ndarray): Statistical uncertainties in newtons.
+            times (numpy array of floats): An array of timestamps (in s).
+            forces (numpy array of floats): An array of average forces per timestamp (in N)
+            uncertainies (numpy array of floats): An array of uncertainties on the average forces (in N).
         """
         times = []
         forces = []
         uncertainties = []
 
-        start_time = time.time()
+        start_time = time.perf_counter()
+        next_measurement_time = start_time
 
-        while time.time() - start_time < duration:
-            force, uncertainty = self.take_average_measurement(
-                number_of_measurements
-            )  # At this timestamp: compute average force
-            current_time = time.time() - start_time
+        while True:
+            # Wait until the scheduled measurement time
+            while time.perf_counter() < next_measurement_time:
+                time.sleep(0.001)
+
+            # Take several measurements and calculate their average
+            force, uncertainty = self.take_average_measurement(number_of_measurements)
+
+            # Record the actual time
+            current_time = time.perf_counter() - start_time
+
             times.append(current_time)
             forces.append(force)
             uncertainties.append(uncertainty)
 
-            time.sleep(interval)  # go to next timestamp
+            # Schedule the next averaged measurement
+            next_measurement_time += interval
+
+            if current_time >= duration:
+                break
+
         return (
             np.array(times),
             np.array(forces),
             np.array(uncertainties),
         )
 
+    def test_average_measurement_time(
+        self, number_of_measurements_list=(1, 2, 4, 5, 8, 10), repetitions=50
+    ):
+        """Diagnostic method to see how long it takes to take average measurements
+
+        Args:
+            number_of_measurements_list (tuple, optional): A list specifying how many measurements to take before computing an average. Defaults to (1, 2, 4, 5, 8, 10).
+            repetitions (int, optional): How many times to repeat the test for each number of measurements for an average. This helps give a distribution of how long it will take to compute an average. Defaults to 20.
+        """
+        for n in number_of_measurements_list:
+            durations = []
+
+            for _ in range(repetitions):
+                start_time = time.perf_counter()
+
+                if n == 1:
+                    self.take_single_measurement()
+                else:
+                    self.take_average_measurement(n)
+
+                elapsed_time = time.perf_counter() - start_time
+                durations.append(elapsed_time)
+
+            print(
+                f"N = {n:2d}: "
+                f"mean = {np.mean(durations):.4f} s ({1 / np.mean(durations):.1f} Hz), "
+                f"min = {np.min(durations):.4f} s, "
+                f"max = {np.max(durations):.4f} s"
+            )
+
     def measure_over_time_with_single_measurements(self, duration, interval=0.01):
+        """Measure a force over time using single measurements. This method repeatedly measures the load on the load cell for a fixed duration of time, with a specific time interval between measurements.
+
+        Args:
+            duration (float): The time duration of the total measurement in seconds.
+            interval (float, optional): The time interval between single measurements. Defaults to 0.01.
+
+        Returns:
+            times (numpy array of floats): Timestamps (in seconds) at which each single measurement was performed.
+            foreces (numpy array of floats): array of forces (in Newtons) for each measurement in the series.
+        """
         times = []
         forces = []
 
@@ -175,9 +264,11 @@ class MjolnirExperiment:
         return np.array(times), np.array(forces)
 
     def start_live_measurement(self):
+        """Feature still being developed: will be implemented when threading has been incorporated into the software."""
         pass
 
     def stop_live_measurement(self):
+        """Feature still being developed: will be implemented when threading has been incorporated into the software."""
         pass
 
 
@@ -219,3 +310,7 @@ if __name__ == "__main__":
     print()
     print("See if successive force values are repeated")
     print(forces[:30])
+
+    print()
+    print("Tests to see how long it takes to compute averages:")
+    experiment.test_average_measurement_time()

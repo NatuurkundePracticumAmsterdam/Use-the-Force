@@ -1,6 +1,6 @@
 [project]
 name = "loadcell-hx711-mvc"
-version = "0.8.3"
+version = "0.8.4"
 description = "Software for the Use-The-Force experiment using the Thorlabs setup -- MVC structure"
 readme = "README.md"
 authors = [
