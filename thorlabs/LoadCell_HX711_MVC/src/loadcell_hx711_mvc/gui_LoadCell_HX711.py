@@ -180,6 +180,8 @@ class UserInterface(QtWidgets.QMainWindow):
     def save_data(self):
         """Save the most recent measurement as a CSV file."""
 
+        # TO DO: Add new info in header: measurement settings (calibration load, timesteps, # averages)
+
         filename, _ = (
             QtWidgets.QFileDialog.getSaveFileName(  # this getSaveFileName returns two things, a filename and a filter. We don't need the filter for anything, so just assign that to a throwaway variable underscore (_)
                 self,
@@ -284,10 +286,18 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.QuickReadButton.setEnabled(True)
         self.ui.CalibrateButton.setEnabled(True)
 
+        # Pop up message saying you have successfully connected to a device
+        QtWidgets.QMessageBox.information(
+            self,
+            "Connect device complete",
+            "You have successfully connected to a device. Happy measuring!",
+        )
+
     @Slot()
     def run_measurement(self):
         """Perform a measurement over the requested duration.
         The input time duration is in seconds"""
+        # TO DO: implement extra feature -- if there is already a previous measurement: give a warning pop saying that you are starting a new measurement and previous data will be deleted
         duration = self.ui.MeasureDurationBox.value()
 
         self.times, self.forces = (
@@ -307,6 +317,8 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def pressed_clear(self):
         """Clear the displayed plot."""
+        # TO DO: Add a little warning message saying that if your data will disappear if you clear the plot!
+
         self.ui.plot_widget.clear()
         self.ui.ResetViewButton.setEnabled(False)
         # Disable the ability to save if you can't see the plot:
@@ -317,6 +329,13 @@ class UserInterface(QtWidgets.QMainWindow):
     def tare(self):
         """Tare the Arduino using the MjolnirExperiment class"""
         self.experiment.tare()
+
+        # Have a little dialog box pop up when the tare has completed successfully:
+        QtWidgets.QMessageBox.information(
+            self,
+            "Tare complete",
+            "Tare completed successfully.",
+        )
 
     @Slot()
     def quick_measure(self):
@@ -355,6 +374,13 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.ReferenceValueBox.setValue(reference_force)
                 # Now enable the run button so the user can run a long measurement:
                 self.ui.RunButton.setEnabled(True)
+                # Pop up message saying you have successfully connected to a device
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Calibration complete",
+                    "You have successfully Calibrated the device. You can now perform long measurements.",
+                )
+
             # If the calibration failed for whatever reason, return a warning message
             else:
                 QtWidgets.QMessageBox.warning(
