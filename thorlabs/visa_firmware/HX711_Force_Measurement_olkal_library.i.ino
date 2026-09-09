@@ -1,4 +1,4 @@
-#include <HX711_ADC.h> // olkal library
+#include <HX711_ADC.h> // olkal library (https://github.com/olkal/HX711_ADC)
 
 // Define a set of commands:
 #define COM_IDN        "*IDN?"       // Gives the identification number
@@ -14,7 +14,7 @@ const int HX711_sck = 5;  // Arduino pin #5
 HX711_ADC LoadCell(HX711_dout, HX711_sck); // Creating an object called LoadCell using these specific Arduino pins
 
 // Identification string:
-const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.1.0";
+const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.2.0";
 
 void setup() {
   // This runs only once as soon as you start up
@@ -29,6 +29,22 @@ void setup() {
   bool _tare = true; //set this to false if you don't want tare to be performed in the next step
 
   LoadCell.start(stabilizingtime, _tare); // Actually starts the process
+
+  // Some tests to see the conversion time and sampling rates
+  while (!LoadCell.update());
+
+  Serial.print("HX711 conversion time: ");
+  Serial.print(LoadCell.getConversionTime());
+  Serial.println(" ms");
+
+  Serial.print("HX711 sampling rate: ");
+  Serial.print(LoadCell.getSPS());
+  Serial.println(" Hz");
+
+  Serial.print("HX711 settling time: ");
+  Serial.print(LoadCell.getSettlingTime());
+  Serial.println(" ms");
+  // Sampling rate tests done
 
 
   Serial.println("READY"); // A little printed out message showing that the system has started up properly
