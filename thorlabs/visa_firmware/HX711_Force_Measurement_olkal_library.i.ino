@@ -16,15 +16,18 @@ const int HX711_sck = 5;  // Arduino pin #5
 HX711_ADC LoadCell(HX711_dout, HX711_sck); // Creating an object called LoadCell using these specific Arduino pins
 
 // Identification string:
-const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.3.0";
+const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.3.1";
 
 // A variable to keep track of whether we are measuring or not (needed for implementation of continuous readout):
 bool measuring = false;
 
+// Buffer used to store incoming serial commands
+String command = "";
+
 void setup() {
   // This runs only once as soon as you start up
   Serial.begin(57600); // The argument here is the baud rate, i.e. the speed at which the adruino and computer communicate over serial
-  Serial.setTimeout(100); // Prevents teh Arduino from getting stuck indefinitely if there is something wrong with the serial communication
+  // Serial.setTimeout(100); // Prevents the Arduino from getting stuck indefinitely if there is something wrong with the serial communication -> This is OBSOLETE after changing the loop to check for while( Serial.available()) below
 
   Serial.println("STARTING"); // Used for troubleshooting
 
@@ -69,64 +72,75 @@ void loop() {
   }
 
   // Check whether a command has been received
-  if (Serial.available()) { // Here you can type someting into the serial monitor in order to give a command
-    
-    String command = Serial.readStringUntil('\n');
-    command.trim();
+  while (Serial.available()) {
 
-    if (command == COM_IDN){
-      Serial.println(IDN_STRING);
-    }
-    
-    else if (command == COM_TARE) {
-      // Tare the load cell
-      measuring = false; // Make sure we are not in the "measuring" state
+    char incoming_char = Serial.read();
 
-      LoadCell.tare(); // This comes from the olkal library
-      Serial.println("TARE COMPLETE");
-    }
+    // A newline means that the command is complete
+    if (incoming_char == '\n') {
 
-    else if (command.startsWith(COM_CALIBRATE)) {
-      // Calibrate the load cell -> The unit used to calibrate the load cell is also the unit that all subsequent measurements return
-      measuring = false; // Make sure we are not in the "measuring" state
+      command.trim();
 
-      String valueString = command.substring(strlen(COM_CALIBRATE));
-      float known_force = valueString.toFloat();
+      if (command == COM_IDN) {
+        Serial.println(IDN_STRING);
+      }
 
-      LoadCell.refreshDataSet();
-      float newCalibrationValue = LoadCell.getNewCalibration(known_force);
-      LoadCell.setCalFactor(newCalibrationValue);
+      else if (command == COM_TARE) {
+        // Tare the load cell
+        measuring = false;
 
-      // Serial.print("CALIBRATION FACTOR: ");
-      // Serial.println(newCalibrationValue);
-      Serial.println("CALIBRATION COMPLETE");
+        LoadCell.tare();
+        Serial.println("TARE COMPLETE");
+      }
+
+      else if (command.startsWith(COM_CALIBRATE)) {
+        // Calibrate the load cell
+        measuring = false;
+
+        String valueString = command.substring(strlen(COM_CALIBRATE));
+        float known_force = valueString.toFloat();
+
+        LoadCell.refreshDataSet();
+        float newCalibrationValue = LoadCell.getNewCalibration(known_force);
+        LoadCell.setCalFactor(newCalibrationValue);
+
+        Serial.println("CALIBRATION COMPLETE");
       }
 
       else if (command == COM_START) {
-        measuring = true; // Turn on the "measuring" state
+        measuring = true;
         Serial.println("MEASURING STATE STARTED");
       }
 
       else if (command == COM_STOP) {
-        measuring = false; // Turn off the "measuring" state
+        measuring = false;
         Serial.println("MEASURING STATE STOPPED");
       }
 
-    // The COM_MEASURE command is obsolute after implementing continuous streaming
+      else {
+        Serial.print("ERROR: UNKNOWN COMMAND ");
+        Serial.println(command);
+      }
+
+      // Clear the command buffer ready for the next command
+      command = "";
+    }
+
+    // The COM_MEASURE command is obsolete after implementing continuous streaming
     // else if (command == COM_MEASURE) {
     //   // Measure the force of a load exerted on the sensor. The units of this measurement are the same as the units that were used during calibration
     //   float value = LoadCell.getData();
     //   Serial.println(value); // This prints the measured value onto the serial monitor
     // }
 
-    // Unknown command
     else {
-
-      Serial.print("ERROR: UNKNOWN COMMAND ");
-      Serial.println(command);
+      // Add the received character to the command
+      command += incoming_char;
     }
-
   }
 
 
 }
+
+
+

@@ -302,7 +302,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.times, self.forces = (
             self.experiment.measure_over_time_with_single_measurements(
-                duration=duration, interval=0.01
+                duration=duration
             )
         )
 

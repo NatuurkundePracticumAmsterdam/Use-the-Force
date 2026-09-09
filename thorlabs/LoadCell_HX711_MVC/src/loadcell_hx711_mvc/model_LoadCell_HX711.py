@@ -54,16 +54,21 @@ class MjolnirExperiment:
 
     def take_single_measurement(self):
         """Take a single measurement by reading out the load cell + HX711 data.
+            Starts continuous acquisition, reads the next available
+            measurement, and then stops continuous acquisition.
 
         Returns:
             single_measurement (float): Force measured by the load cell.
             single_measurement_err (float): Statistical uncertainty. This is returned as 0 because no repeated measurements are available to estimate the statistical uncertainty.
         """
+        self.device.start_measurement()
 
-        single_measurement = self.device.measure()
-        # single_measurement_err = 0
+        try:
+            single_measurement = self.device.measure()
+        finally:
+            self.device.stop_measurement()
 
-        return single_measurement  # , single_measurement_err
+        return single_measurement
 
     def take_average_measurement(
         self, number_of_measurements=2
@@ -336,21 +341,24 @@ class MjolnirExperiment:
         # Start the continuous stream of outputs:
         self.device.start_measurement()
 
-        start_time = time.perf_counter()
+        try:
+            start_time = time.perf_counter()
 
-        while True:
-            force = self.take_single_measurement()
+            while True:
+                # Read the next measurement from the continuous stream
+                force = self.device.measure()
 
-            current_time = time.perf_counter() - start_time
+                current_time = time.perf_counter() - start_time
 
-            times.append(current_time)
-            forces.append(force)
+                times.append(current_time)
+                forces.append(force)
 
-            if current_time >= duration:
-                break
+                if current_time >= duration:
+                    break
 
-        # Stop the continuous stream of outputs:
-        self.device.stop_measurement()
+        finally:
+            # Stop the continuous stream of outputs:
+            self.device.stop_measurement()
 
         return np.array(times), np.array(forces)
 

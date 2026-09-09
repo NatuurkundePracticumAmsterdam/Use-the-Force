@@ -120,8 +120,11 @@ class ArduinoHX711Device:
             String: Confirmation that continuous measurement has stopped.
         """
         self.device.write("STOP")  # Give command to turn off "measuring" state
-        response = self.device.read()
-        return response
+
+        while True:
+            response = self.device.read()
+            if response == "MEASURING STATE STOPPED":
+                return response
 
     # Method to read measurements using a continuous output architecture
     def read_measurement(self):
