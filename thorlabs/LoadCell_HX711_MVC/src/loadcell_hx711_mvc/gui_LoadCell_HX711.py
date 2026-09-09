@@ -313,7 +313,7 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def quick_measure(self):
         """Perform a quick instantaneous measurement. The units returned by this are the same units as the calibration factor that was used"""
-        result = self.experiment.measure()
+        result = self.experiment.take_single_measurement()
         self.ui.QuickReadOutputBox.setValue(result)
 
     @Slot()
@@ -322,7 +322,7 @@ class UserInterface(QtWidgets.QMainWindow):
         reference_force, ok = QInputDialog.getDouble(
             self,
             "Calibration",
-            "Enter the reference force in Newton:",
+            "Place a reference load on the sensor and enter the reference force in Newton:",
         )
 
         if ok:

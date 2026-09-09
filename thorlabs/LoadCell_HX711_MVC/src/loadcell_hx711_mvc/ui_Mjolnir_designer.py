@@ -186,7 +186,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.DeviceSelectorBox.setCurrentText("")
-        self.DeviceSelectorBox.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Device", None))
+        self.DeviceSelectorBox.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Select device...", None))
         self.RefreshDevicesButton.setText(QCoreApplication.translate("MainWindow", u"Refresh Devices", None))
         self.TareButton.setText(QCoreApplication.translate("MainWindow", u"Tare", None))
         self.CalibrateButton.setText(QCoreApplication.translate("MainWindow", u"Calibrate", None))
