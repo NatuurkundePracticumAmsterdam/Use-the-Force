@@ -37,6 +37,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # For the plot that will be made eventually:
         self.times = None
         self.forces = None
+        self.movement = None
 
         # Show an empty plot initially, but have some units and formatting ready
         self.ui.plot_widget.setLabel("bottom", "Time", units="s")
@@ -200,10 +201,13 @@ class UserInterface(QtWidgets.QMainWindow):
             with open(filename, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
 
-                writer.writerow(["Time_s", "Force_N"])  # Two columns: time and force
+                # Three columns: time, force, moving (yes/no)
+                writer.writerow(["Time_s", "Force_N", "Moving"])
 
-                for time_s, force_n in zip(self.times, self.forces):
-                    writer.writerow([time_s, force_n])
+                for time_s, force_n, moving_yesno in zip(
+                    self.times, self.forces, self.movement
+                ):
+                    writer.writerow([time_s, force_n, moving_yesno])
 
     @Slot()
     def show_plot(self):
@@ -300,7 +304,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # TO DO: implement extra feature -- if there is already a previous measurement: give a warning pop saying that you are starting a new measurement and previous data will be deleted
         duration = self.ui.MeasureDurationBox.value()
 
-        self.times, self.forces = (
+        self.times, self.forces, self.movement = (
             self.experiment.measure_over_time_with_single_measurements(
                 duration=duration
             )
@@ -342,7 +346,7 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def quick_measure(self):
         """Perform a quick instantaneous measurement. The units returned by this are the same units as the calibration factor that was used"""
-        result = self.experiment.take_single_measurement()
+        result, movement_state = self.experiment.take_single_measurement()
         self.ui.QuickReadOutputBox.setValue(result)
 
     @Slot()

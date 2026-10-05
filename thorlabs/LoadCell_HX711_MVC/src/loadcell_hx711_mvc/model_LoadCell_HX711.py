@@ -64,11 +64,11 @@ class MjolnirExperiment:
         self.device.start_measurement()
 
         try:
-            single_measurement = self.device.measure()
+            single_measurement, moving = self.device.measure()
         finally:
             self.device.stop_measurement()
 
-        return single_measurement
+        return single_measurement, moving
 
     def take_average_measurement(
         self, number_of_measurements=2
@@ -90,26 +90,30 @@ class MjolnirExperiment:
             )
 
         measurement_list = []
+        moving_list = []
 
-        for i in range(
+        # Carry out measurement multiple times and store in a list:
+        for i in range(number_of_measurements):
+            force, moving = self.device.measure()
+            measurement_list.append(force)
+            # for now, we don't really need to know whether it is moving when you are averaging, or do you?
+            moving_list.append(moving)
+
+        # Take the average of multiple readings:
+        average_measured_force = np.mean(measurement_list)
+
+        # Use N-1 because the sample mean is estimated from the measurements, leaving N-1 independent deviations:
+        standard_deviation = np.std(measurement_list, ddof=1)
+
+        # Uncertainty on average: std_dev / sqrt(N), where N is number of measurements:
+        average_measured_force_err = standard_deviation / np.sqrt(
             number_of_measurements
-        ):  # Carry out measurement multiple times and store in a list
-            measurement_list.append(self.device.measure())
-
-        average_measured_force = np.mean(
-            measurement_list
-        )  # Take the average of multiple readings
-        standard_deviation = np.std(
-            measurement_list, ddof=1
-        )  # Use N-1 because the sample mean is estimated from the measurements, leaving N-1 independent deviations.
-        average_measured_force_err = (
-            standard_deviation
-            / np.sqrt(
-                number_of_measurements  # Uncertainty on average: std_dev / sqrt(N), where N is number of measurements
-            )
         )
 
-        return average_measured_force, average_measured_force_err
+        # For now, just have your moving list, but you need to think about what this physically means before you actually start using it, since we don't really have an "average movement" quantity
+        moving = moving_list[-1]
+
+        return average_measured_force, average_measured_force_err, moving
 
     # def measure_over_time_with_uncertainty(
     #     self, duration, interval=0.01, number_of_measurements=10
@@ -221,6 +225,7 @@ class MjolnirExperiment:
         times = []
         forces = []
         uncertainties = []
+        movements = []
 
         # Start the continuous stream of measurements.
         self.device.start_measurement()
@@ -229,7 +234,9 @@ class MjolnirExperiment:
 
         while True:
             # Take several consecutive measurements and calculate their average.
-            force, uncertainty = self.take_average_measurement(number_of_measurements)
+            force, uncertainty, moving = self.take_average_measurement(
+                number_of_measurements
+            )
 
             # Record the time at which the average was completed.
             current_time = time.perf_counter() - start_time
@@ -237,6 +244,7 @@ class MjolnirExperiment:
             times.append(current_time)
             forces.append(force)
             uncertainties.append(uncertainty)
+            movement.append(moving)
 
             if current_time >= duration:
                 break
@@ -248,6 +256,7 @@ class MjolnirExperiment:
             np.array(times),
             np.array(forces),
             np.array(uncertainties),
+            np.array(movement),
         )
 
     # def test_average_measurement_time(
@@ -337,6 +346,7 @@ class MjolnirExperiment:
 
         times = []
         forces = []
+        movement = []
 
         # Start the continuous stream of outputs:
         self.device.start_measurement()
@@ -346,21 +356,22 @@ class MjolnirExperiment:
 
             while True:
                 # Read the next measurement from the continuous stream
-                force = self.device.measure()
+                force, moving = self.device.measure()
 
                 current_time = time.perf_counter() - start_time
 
                 times.append(current_time)
                 forces.append(force)
+                movement.append(moving)
 
                 if current_time >= duration:
                     break
 
-        finally:
+        finally:  # Always just make sure that you stop the measurement, even if the stuff under the "try" did not work
             # Stop the continuous stream of outputs:
             self.device.stop_measurement()
 
-        return np.array(times), np.array(forces)
+        return np.array(times), np.array(forces), np.array(movement)
 
     def start_live_measurement(self):
         """Feature still being developed: will be implemented when threading has been incorporated into the software."""
@@ -377,7 +388,9 @@ if __name__ == "__main__":
     experiment = MjolnirExperiment("ASRL/dev/cu.usbmodem1101::INSTR")
 
     # Some tests to see how fast the communication is happening and what the sampling rate is:
-    times, forces = experiment.measure_over_time_with_single_measurements(duration=10)
+    times, forces, movement = experiment.measure_over_time_with_single_measurements(
+        duration=10
+    )
 
     # The Arduino/HX711 continuously acquires measurements.
     # Python reads each new measurement as it becomes available.
@@ -415,7 +428,7 @@ if __name__ == "__main__":
     print()
     # Tests to see how well we can average now with continuous output architecture:
     print("Tests to see how well averaging works now:")
-    times, forces, uncertainties = (
+    times, forces, uncertainties, movement = (
         experiment.measure_over_time_with_average_measurements(
             duration=10,
             number_of_measurements=4,

@@ -30,7 +30,8 @@ class ArduinoHX711Device:
         self.device.baud_rate = 57600  # Set the baud rate -> the speed at which the serial communication happens. The firmware has this at 57600
         self.device.timeout = 5000
 
-        self.wait_until_ready()  # Call this method when the class is initialized to make sure that the Arduino does not receive commands before it has set itself up
+        # This wait_until_ready is not needed for the arduino nano
+        # self.wait_until_ready()  # Call this method when the class is initialized to make sure that the Arduino does not receive commands before it has set itself up
 
     def close(self):
         """Close the connection to the Arduino."""
@@ -46,6 +47,7 @@ class ArduinoHX711Device:
         """
         while True:
             message = self.device.read()
+            print(f"Arduino: {message}")
             if message == "READY":
                 break
 
@@ -121,10 +123,12 @@ class ArduinoHX711Device:
         """
         self.device.write("STOP")  # Give command to turn off "measuring" state
 
-        while True:
+        while (
+            True
+        ):  # True never becomes <<not true>>, so this is essentially an infinite loop
             response = self.device.read()
             if response == "MEASURING STATE STOPPED":
-                return response
+                return response  # We can force the infinite loop to stop through this return statement
 
     # Method to read measurements using a continuous output architecture
     def read_measurement(self):
@@ -137,9 +141,18 @@ class ArduinoHX711Device:
             response = self.device.read()
 
             if response.startswith(
-                "DATA,"
+                "DATA,"  # If the response that we get back from the Aruino starts with "DATA,", then we can exit the while loop, because we have found the (single) measurement that we wanted
             ):  # Need to have this condition for in case the Arduino returns something that isn't data (like info about taring or calibrating). We only want to read data here.
-                return float(response.split(",", 1)[1])
+                # In order for the Arduino to read anything with "DATA,", it does neet to be in the MEASURING state, so make sure that you have starteed this before trying to read a measurement
+
+                values = response.split(",")
+
+                force = float(values[1])  # This should be the force readout
+                # This should be the translation stage I/O (1 or 0):
+                moving = bool(int(values[2]))
+
+                # return float(response.split(",", 1)[1])
+                return force, moving
 
 
 if __name__ == "__main__":
