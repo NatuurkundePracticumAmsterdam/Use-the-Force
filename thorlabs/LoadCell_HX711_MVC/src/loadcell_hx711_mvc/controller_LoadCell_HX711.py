@@ -30,7 +30,7 @@ class ArduinoHX711Device:
         self.device.baud_rate = 57600  # Set the baud rate -> the speed at which the serial communication happens. The firmware has this at 57600
         self.device.timeout = 5000
 
-        # This wait_until_ready is not needed for the arduino nano
+        # This wait_until_ready is not needed for the arduino nano -- This was needed for test measurements using a classic Arduino, but the nano seems to be much faster and doesn't need this
         # self.wait_until_ready()  # Call this method when the class is initialized to make sure that the Arduino does not receive commands before it has set itself up
 
     def close(self):
