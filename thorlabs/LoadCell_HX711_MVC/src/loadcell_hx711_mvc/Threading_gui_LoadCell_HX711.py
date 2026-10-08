@@ -5,7 +5,7 @@ from importlib.metadata import version
 import pyqtgraph as pg
 from PySide6 import QtWidgets
 from PySide6.QtCore import QLocale, Slot
-from PySide6.QtWidgets import QInputDialog
+from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 # Allow this script to be run either as a package via "Mjolnir"
 # or directly with "python gui_LoadCell_HX711.py".
@@ -37,10 +37,14 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         self.experiment = None  # No experiment has been created yet, you have to connect to a device first. Setting this to None now prevents some problems down the line
+        self.connected_device = None  # Keep track of what is connected
         # For the plot that will be made eventually:
         self.times = []
         self.forces = []
         self.movement = []
+
+        # To keep track of whether you have a measurement that you are about to override:
+        self.has_live_measurement = False  # You do not have any measurement when you open the app for the first time
 
         # Show an empty plot initially, but have some units and formatting ready
         self.ui.plot_widget.setLabel("bottom", "Time", units="s")
@@ -120,6 +124,9 @@ class UserInterface(QtWidgets.QMainWindow):
     def receive_live_measurement(self, force, moving):
         """Receive a live force measurement and add it to the plot."""
 
+        # Update the status: you now have live measurements
+        self.has_live_measurement = True
+
         current_time = time.perf_counter() - self.measurement_start_time
 
         self.times.append(current_time)
@@ -131,6 +138,22 @@ class UserInterface(QtWidgets.QMainWindow):
     # Implemented for threading:
     @Slot()
     def start_live_measurement(self):
+
+        if self.has_live_measurement:
+            reply = QMessageBox.question(
+                self,
+                "Start new measurement?",
+                "Warning: you are about to start a new measurement. "
+                "Any previous measurement currently shown will be overwritten. "
+                "Would you like to continue?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+
+            if reply != QMessageBox.Yes:
+                return
+
+        # Reset all previous measurements
         self.times = []
         self.forces = []
         self.movement = []
@@ -150,6 +173,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.ClearPlot.setEnabled(False)
         self.ui.ResetViewButton.setEnabled(False)
         self.ui.SaveButton.setEnabled(False)
+        self.ui.QuickReadButton.setEnabled(False)
 
     # Implemented for threading:
     @Slot()
@@ -163,6 +187,7 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.ClearPlot.setEnabled(True)
         self.ui.SaveButton.setEnabled(True)
         self.ui.ShowButton.setEnabled(True)
+        self.ui.QuickReadButton.setEnabled(True)
 
     @Slot()
     def refresh_devices(self):
@@ -184,6 +209,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.experiment.stop_live_measurement()
             self.experiment.close()  # Close the connection that you had
             self.experiment = None  # Set the experiment state to None (because we are _not_ connected to anything right now)
+            self.connected_device = None
 
             self.ui.FirmwareLabel.setText(
                 f"Use-the-force Mjolnir {MJOLNIR_VERSION} | No device connected"
@@ -203,6 +229,9 @@ class UserInterface(QtWidgets.QMainWindow):
             self.times = []
             self.forces = []
             self.movement = []
+
+            self.has_live_measurement = False
+            self.ui.plot_widget.clear()
 
         # Now to update the list:
         # Empty out the box and remove all possible selections:
@@ -276,13 +305,6 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.ui.plot_widget.clear()
 
-        # Plot a line: (commented out for now, not needed)
-        # self.ui.plot_widget.plot(
-        #     self.times,
-        #     self.forces,
-        #     pen=pg.mkPen("b", width=3),  # Blue colour for line
-        # )
-
         # Plot dots:
         self.ui.plot_widget.plot(
             self.times,
@@ -296,27 +318,42 @@ class UserInterface(QtWidgets.QMainWindow):
         # Set the axes to the automatically determined range
         self.ui.plot_widget.autoRange()
 
-        # If you have plotted something, you are allowed to save/reset the view:
-        # self.ui.SaveButton.setEnabled(True)
-        # self.ui.ResetViewButton.setEnabled(True)
-
     # This activates once you click a port in the "select device" dropdown menu
     @Slot()
     def device_selected(self):
-        """After clicking "select a device", you actually connect to the Arduino and create an instance of MjolnirExperiment"""
+        """Connect to the device selected in the device selector."""
+
+        # If "Select device..." is selected
         if self.ui.DeviceSelectorBox.currentIndex() == 0:
-            # If index is 0, it means that you are still on "select device..." and have not selected anything yet
             if self.experiment is not None:
-                # This happens if you had selected something earlier but then clicked on "select device..." again afterwards. You close your connection to the device
+                # Warn if there is measurement data that would be deleted
+                if self.has_live_measurement:
+                    reply = QMessageBox.question(
+                        self,
+                        "Disconnect device?",
+                        "Warning: disconnecting the device will delete the current "
+                        "measurement from the application. Would you like to continue?",
+                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.No,
+                    )
+
+                    if reply != QMessageBox.Yes:
+                        # Restore the currently connected device
+                        self.ui.DeviceSelectorBox.blockSignals(True)
+                        self.ui.DeviceSelectorBox.setCurrentText(self.connected_device)
+                        self.ui.DeviceSelectorBox.blockSignals(False)
+                        return
+
                 self.experiment.stop_live_measurement()
                 self.experiment.close()
                 self.experiment = None
+                self.connected_device = None
 
             self.ui.FirmwareLabel.setText(
                 f"Use-the-force Mjolnir {MJOLNIR_VERSION} | No device connected"
             )
 
-            # Reset all buttons:
+            # Reset all buttons
             self.ui.TareButton.setEnabled(False)
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
@@ -326,18 +363,40 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
 
-            # Reset any measurements that may have happened
+            # Reset measurement data
             self.times = []
             self.forces = []
             self.movement = []
+            self.has_live_measurement = False
 
             return
 
-        # If another device is already connected, close its connection first:
+        # A real device has been selected.
+        # If another device is already connected, ask before switching.
         if self.experiment is not None:
+            if self.has_live_measurement:
+                reply = QMessageBox.question(
+                    self,
+                    "Change device?",
+                    "Warning: changing the connected device will delete the current "
+                    "measurement from the application. Would you like to continue?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No,
+                )
+
+                if reply != QMessageBox.Yes:
+                    # Restore the currently connected device
+                    self.ui.DeviceSelectorBox.blockSignals(True)
+                    self.ui.DeviceSelectorBox.setCurrentText(self.connected_device)
+                    self.ui.DeviceSelectorBox.blockSignals(False)
+                    return
+
             self.experiment.stop_live_measurement()
             self.experiment.close()
-            # Reset all buttons:
+            self.experiment = None
+            self.connected_device = None
+
+            # Reset all buttons
             self.ui.TareButton.setEnabled(False)
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
@@ -346,35 +405,41 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.SaveButton.setEnabled(False)
             self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
-            # Reset any measurements that may have happened
+
+            # Reset measurement data
             self.times = []
             self.forces = []
             self.movement = []
+            self.has_live_measurement = False
+            self.ui.plot_widget.clear()
 
-        # Now we can read out the port of the new device and start a fresh connection, with no other (older) devices connected
+        # Connect to the newly selected device
         portname = self.ui.DeviceSelectorBox.currentText()
 
-        # Create an instance of MjolnirExperiment (i.e.: connect to the Arduino)
         self.experiment = MjolnirExperiment(portname)
 
-        # Print the firmware version in the label
+        # Remember which device is currently connected
+        self.connected_device = portname
+
+        # Show the firmware version
         self.ui.FirmwareLabel.setText(
             f"Use-the-force Mjolnir {MJOLNIR_VERSION} | "
             f"{self.experiment.device_identification}"
         )
 
-        # Make the Tare, Quick Read, and Calibrate buttons clickable
+        # Make the device-specific buttons available
         self.ui.TareButton.setEnabled(True)
         self.ui.QuickReadButton.setEnabled(True)
         self.ui.CalibrateButton.setEnabled(True)
 
-        # Pop up message saying you have successfully connected to a device
+        # Confirm successful connection
         QtWidgets.QMessageBox.information(
             self,
             "Connect device complete",
             "You have successfully connected to a device. Happy measuring!",
         )
 
+    # The method below is now obsolete, because it does not work with the threading implementation. In its current form, this method will run a measurement for a fixed duration of time (which can then be plotted/saved later)
     @Slot()
     def run_measurement(self):
         """Perform a measurement over the requested duration.
@@ -401,13 +466,34 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def pressed_clear(self):
         """Clear the displayed plot."""
-        # TO DO: Add a little warning message saying that if your data will disappear if you clear the plot!
+
+        if self.has_live_measurement:
+            reply = QMessageBox.question(
+                self,
+                "Clear measurement?",
+                "Warning: clearing the plot will delete the current measurement "
+                "from the application. Would you like to continue?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+
+            if reply != QMessageBox.Yes:
+                return
+
+        # Clear all measurement data
+        self.times = []
+        self.forces = []
+        self.movement = []
+
+        # There is no longer a measurement to overwrite
+        self.has_live_measurement = False
 
         self.ui.plot_widget.clear()
         self.ui.ResetViewButton.setEnabled(False)
         # Disable the ability to save if you can't see the plot:
         self.ui.SaveButton.setEnabled(False)
         # This is mainly implemented because a user might forget what they are storing, and therefore confuse measurements. Better to be able to see what you're saving before you actually save it
+        self.ui.ShowButton.setEnabled(False)
 
     @Slot()
     def tare(self):
@@ -433,7 +519,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # Make a dialog box that pops up when you click calibrate
         dialog = QInputDialog(self)
-        dialog.setDoubleRange(0.0, 1000000.0)  # Some arbitary range
+        dialog.setDoubleRange(0.0, 1000000.0)  # Some arbitrary range
         # Allow users to type up to 6 decimals, though the load cell definitely does not have this sensitivty. Better to keep it at much fewer decimals than 6:
         dialog.setDoubleDecimals(6)
         dialog.setWindowTitle("Calibration")
