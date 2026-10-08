@@ -1,0 +1,195 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'Threading_DesignerGuiMjolnir.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.2
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox,
+    QHBoxLayout, QLabel, QMainWindow, QMenuBar,
+    QPushButton, QSizePolicy, QStatusBar, QVBoxLayout,
+    QWidget)
+
+from pyqtgraph import PlotWidget
+
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        if not MainWindow.objectName():
+            MainWindow.setObjectName(u"MainWindow")
+        MainWindow.resize(800, 600)
+        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
+        self.verticalLayout = QVBoxLayout(self.centralwidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.verticalLayout_3 = QVBoxLayout()
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(-1, -1, 0, -1)
+        self.DeviceSelectorBox = QComboBox(self.centralwidget)
+        self.DeviceSelectorBox.setObjectName(u"DeviceSelectorBox")
+        self.DeviceSelectorBox.setEditable(False)
+
+        self.verticalLayout_3.addWidget(self.DeviceSelectorBox)
+
+        self.RefreshDevicesButton = QPushButton(self.centralwidget)
+        self.RefreshDevicesButton.setObjectName(u"RefreshDevicesButton")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.RefreshDevicesButton.sizePolicy().hasHeightForWidth())
+        self.RefreshDevicesButton.setSizePolicy(sizePolicy)
+        self.RefreshDevicesButton.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+
+        self.verticalLayout_3.addWidget(self.RefreshDevicesButton)
+
+        self.TareButton = QPushButton(self.centralwidget)
+        self.TareButton.setObjectName(u"TareButton")
+
+        self.verticalLayout_3.addWidget(self.TareButton)
+
+        self.CalibrateButton = QPushButton(self.centralwidget)
+        self.CalibrateButton.setObjectName(u"CalibrateButton")
+
+        self.verticalLayout_3.addWidget(self.CalibrateButton)
+
+        self.ReferenceValueBox = QDoubleSpinBox(self.centralwidget)
+        self.ReferenceValueBox.setObjectName(u"ReferenceValueBox")
+        self.ReferenceValueBox.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.ReferenceValueBox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.ReferenceValueBox.setReadOnly(True)
+        self.ReferenceValueBox.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.ReferenceValueBox.setDecimals(4)
+        self.ReferenceValueBox.setMaximum(100000000.000000000000000)
+
+        self.verticalLayout_3.addWidget(self.ReferenceValueBox)
+
+        self.QuickReadButton = QPushButton(self.centralwidget)
+        self.QuickReadButton.setObjectName(u"QuickReadButton")
+
+        self.verticalLayout_3.addWidget(self.QuickReadButton)
+
+        self.QuickReadOutputBox = QDoubleSpinBox(self.centralwidget)
+        self.QuickReadOutputBox.setObjectName(u"QuickReadOutputBox")
+        self.QuickReadOutputBox.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.QuickReadOutputBox.setFrame(False)
+        self.QuickReadOutputBox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.QuickReadOutputBox.setReadOnly(True)
+        self.QuickReadOutputBox.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.QuickReadOutputBox.setDecimals(4)
+        self.QuickReadOutputBox.setMaximum(100000000.000000000000000)
+
+        self.verticalLayout_3.addWidget(self.QuickReadOutputBox)
+
+
+        self.horizontalLayout_4.addLayout(self.verticalLayout_3)
+
+        self.plot_widget = PlotWidget(self.centralwidget)
+        self.plot_widget.setObjectName(u"plot_widget")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.plot_widget.sizePolicy().hasHeightForWidth())
+        self.plot_widget.setSizePolicy(sizePolicy1)
+
+        self.horizontalLayout_4.addWidget(self.plot_widget)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_4)
+
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.RunButton = QPushButton(self.centralwidget)
+        self.RunButton.setObjectName(u"RunButton")
+
+        self.horizontalLayout_3.addWidget(self.RunButton)
+
+        self.StopButton = QPushButton(self.centralwidget)
+        self.StopButton.setObjectName(u"StopButton")
+
+        self.horizontalLayout_3.addWidget(self.StopButton)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.ShowButton = QPushButton(self.centralwidget)
+        self.ShowButton.setObjectName(u"ShowButton")
+
+        self.horizontalLayout.addWidget(self.ShowButton)
+
+        self.SaveButton = QPushButton(self.centralwidget)
+        self.SaveButton.setObjectName(u"SaveButton")
+
+        self.horizontalLayout.addWidget(self.SaveButton)
+
+        self.ResetViewButton = QPushButton(self.centralwidget)
+        self.ResetViewButton.setObjectName(u"ResetViewButton")
+
+        self.horizontalLayout.addWidget(self.ResetViewButton)
+
+        self.ClearPlot = QPushButton(self.centralwidget)
+        self.ClearPlot.setObjectName(u"ClearPlot")
+
+        self.horizontalLayout.addWidget(self.ClearPlot)
+
+        self.ExitButton = QPushButton(self.centralwidget)
+        self.ExitButton.setObjectName(u"ExitButton")
+
+        self.horizontalLayout.addWidget(self.ExitButton)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.FirmwareLabel = QLabel(self.centralwidget)
+        self.FirmwareLabel.setObjectName(u"FirmwareLabel")
+        self.FirmwareLabel.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
+
+        self.verticalLayout.addWidget(self.FirmwareLabel)
+
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(MainWindow)
+        self.menubar.setObjectName(u"menubar")
+        self.menubar.setGeometry(QRect(0, 0, 800, 37))
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(MainWindow)
+        self.statusbar.setObjectName(u"statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+
+        self.retranslateUi(MainWindow)
+
+        QMetaObject.connectSlotsByName(MainWindow)
+    # setupUi
+
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.DeviceSelectorBox.setCurrentText("")
+        self.DeviceSelectorBox.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Select device...", None))
+        self.RefreshDevicesButton.setText(QCoreApplication.translate("MainWindow", u"Refresh Devices", None))
+        self.TareButton.setText(QCoreApplication.translate("MainWindow", u"Tare", None))
+        self.CalibrateButton.setText(QCoreApplication.translate("MainWindow", u"Calibrate", None))
+        self.ReferenceValueBox.setPrefix(QCoreApplication.translate("MainWindow", u"Calibration value: ", None))
+        self.ReferenceValueBox.setSuffix(QCoreApplication.translate("MainWindow", u" N", None))
+        self.QuickReadButton.setText(QCoreApplication.translate("MainWindow", u"Quick Read", None))
+        self.QuickReadOutputBox.setSuffix(QCoreApplication.translate("MainWindow", u" N", None))
+        self.RunButton.setText(QCoreApplication.translate("MainWindow", u"Start Measurement", None))
+        self.StopButton.setText(QCoreApplication.translate("MainWindow", u"Stop Measurement", None))
+        self.ShowButton.setText(QCoreApplication.translate("MainWindow", u"Show Plot", None))
+        self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save CSV", None))
+        self.ResetViewButton.setText(QCoreApplication.translate("MainWindow", u"Reset View", None))
+        self.ClearPlot.setText(QCoreApplication.translate("MainWindow", u"Clear Plot", None))
+        self.ExitButton.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
+        self.FirmwareLabel.setText(QCoreApplication.translate("MainWindow", u"Firmware Information here", None))
+    # retranslateUi
+

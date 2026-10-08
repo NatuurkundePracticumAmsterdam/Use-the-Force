@@ -1,6 +1,12 @@
 import time
 
 import numpy as np
+from PySide6.QtCore import (  # Import this as part of the threading implementation
+    QObject,
+    QThread,
+    Signal,
+    Slot,
+)
 
 from loadcell_hx711_mvc.controller_LoadCell_HX711 import (
     ArduinoHX711Device,
@@ -17,6 +23,40 @@ def model_list_resources():
     return list_resources()
 
 
+# A new "worker" class -- used to implement threading
+class LiveMeasurementWorker(QObject):
+    """Worker that continuously reads measurements from the load cell."""
+
+    measurement_received = Signal(float, bool)
+    finished = Signal()
+
+    def __init__(self, device):
+        super().__init__()
+        self.device = device
+        self.running = False
+
+    @Slot()
+    def run(self):
+        """Continuously read measurements until stopped."""
+
+        self.running = True
+
+        self.device.start_measurement()
+
+        try:
+            while self.running:
+                force, moving = self.device.measure()
+                self.measurement_received.emit(force, moving)
+
+        finally:
+            self.device.stop_measurement()
+            self.finished.emit()
+
+    def stop(self):
+        """Request the worker to stop measuring."""
+        self.running = False
+
+
 class MjolnirExperiment:
     """Used to carry out force measurements using the Thorlabs Mjolnir setup."""
 
@@ -29,6 +69,10 @@ class MjolnirExperiment:
         self.device = ArduinoHX711Device(port_name)
 
         self.device_identification = self.device.get_identification()
+
+        # To implement threading:
+        self.live_thread = None
+        self.live_worker = None
 
     def close(self):
         """Close the connection to the Arduino."""
@@ -373,13 +417,28 @@ class MjolnirExperiment:
 
         return np.array(times), np.array(forces), np.array(movement)
 
+    # Implemented for threading:
     def start_live_measurement(self):
-        """Feature still being developed: will be implemented when threading has been incorporated into the software."""
-        pass
+        """Start continuous live measurement in a separate thread."""
+        self.live_thread = QThread()
+        self.live_worker = LiveMeasurementWorker(self.device)
 
+        self.live_worker.moveToThread(self.live_thread)
+
+        self.live_thread.started.connect(self.live_worker.run)
+
+        self.live_worker.finished.connect(self.live_thread.quit)
+        self.live_worker.finished.connect(self.live_worker.deleteLater)
+        self.live_thread.finished.connect(self.live_thread.deleteLater)
+
+        return self.live_worker
+
+    # Implemented for threading:
     def stop_live_measurement(self):
-        """Feature still being developed: will be implemented when threading has been incorporated into the software."""
-        pass
+        """Request the live measurement worker to stop."""
+
+        if self.live_worker is not None:
+            self.live_worker.stop()
 
 
 if __name__ == "__main__":

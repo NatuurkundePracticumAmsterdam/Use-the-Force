@@ -145,41 +145,16 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <widget class="QLabel" name="LongMeasurementLabel">
-        <property name="text">
-         <string>Long measurement duration:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QDoubleSpinBox" name="MeasureDurationBox">
-        <property name="locale">
-         <locale language="English" country="UnitedStates"/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-        </property>
-        <property name="suffix">
-         <string> s</string>
-        </property>
-        <property name="decimals">
-         <number>4</number>
-        </property>
-        <property name="maximum">
-         <double>100000000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="RunButton">
         <property name="text">
-         <string>Run Long Measurement</string>
+         <string>Start Measurement</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="StopButton">
+        <property name="text">
+         <string>Stop Measurement</string>
         </property>
        </widget>
       </item>

@@ -143,6 +143,7 @@ class UserInterface(QtWidgets.QMainWindow):
             # Reset any measurements that may have happened
             self.times = None
             self.forces = None
+            self.movement = None
 
         # Now to update the list:
         # Empty out the box and remove all possible selections:
@@ -266,6 +267,7 @@ class UserInterface(QtWidgets.QMainWindow):
             # Reset any measurements that may have happened
             self.times = None
             self.forces = None
+            self.movement = None
 
             return
 
@@ -283,6 +285,7 @@ class UserInterface(QtWidgets.QMainWindow):
             # Reset any measurements that may have happened
             self.times = None
             self.forces = None
+            self.movement = None
 
         # Now we can read out the port of the new device and start a fresh connection, with no other (older) devices connected
         portname = self.ui.DeviceSelectorBox.currentText()

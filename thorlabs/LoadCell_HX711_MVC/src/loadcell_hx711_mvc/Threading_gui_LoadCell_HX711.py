@@ -10,13 +10,16 @@ from PySide6.QtWidgets import QInputDialog
 # Allow this script to be run either as a package via "Mjolnir"
 # or directly with "python gui_LoadCell_HX711.py".
 try:
-    from .ui_Mjolnir_designer import Ui_MainWindow
+    from .Threading_ui_Mjolnir_designer import Ui_MainWindow
 except ImportError:
-    from ui_Mjolnir_designer import Ui_MainWindow
+    from Threading_ui_Mjolnir_designer import Ui_MainWindow
 
 MJOLNIR_VERSION = version("loadcell-hx711-mvc")
 
-from loadcell_hx711_mvc.model_LoadCell_HX711 import (
+# Needed for threading:
+import time
+
+from loadcell_hx711_mvc.Threading_model_LoadCell_HX711 import (
     MjolnirExperiment,
     model_list_resources,
 )
@@ -35,9 +38,9 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.experiment = None  # No experiment has been created yet, you have to connect to a device first. Setting this to None now prevents some problems down the line
         # For the plot that will be made eventually:
-        self.times = None
-        self.forces = None
-        self.movement = None
+        self.times = []
+        self.forces = []
+        self.movement = []
 
         # Show an empty plot initially, but have some units and formatting ready
         self.ui.plot_widget.setLabel("bottom", "Time", units="s")
@@ -74,14 +77,17 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.TareButton.setEnabled(False)
         self.ui.CalibrateButton.setEnabled(False)
         self.ui.QuickReadButton.setEnabled(False)
-        # Also make the "run long measurement", show, and save plots unavailable until you have actually calibrated:
+        # Also make the "start measurement", show, and save plots unavailable until you have actually calibrated:
         self.ui.RunButton.setEnabled(False)
+        # Also make the "stop measurement" button not show up:
+        self.ui.StopButton.setEnabled(False)
         # Don't have the "save plot" button pop up until you have finished running a long measurement:
         self.ui.SaveButton.setEnabled(False)
         # Don't have the "show plot" button pop up until you have created a plot:
         self.ui.ShowButton.setEnabled(False)
         # Don't have the "reset view" button pop up until you created a plot:
         self.ui.ResetViewButton.setEnabled(False)
+        self.ui.ClearPlot.setEnabled(False)
 
         # Once tare becomes clickable, it has this feature:
         self.ui.TareButton.clicked.connect(self.tare)
@@ -95,8 +101,10 @@ class UserInterface(QtWidgets.QMainWindow):
         # Clear plots:
         self.ui.ClearPlot.clicked.connect(self.pressed_clear)
 
-        # Once you have calibrated, you can run a long measurement:
-        self.ui.RunButton.clicked.connect(self.run_measurement)
+        # Once you have calibrated, you can run a long measurement (threading version):
+        self.ui.RunButton.clicked.connect(self.start_live_measurement)
+        # Once you have run a measurement, you can also stop:
+        self.ui.StopButton.clicked.connect(self.stop_live_measurement)
 
         # Once a long measurement has been done, you can draw your plot:
         self.ui.ShowButton.clicked.connect(self.show_plot)
@@ -106,6 +114,55 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # Extra button just for fun: reset view for in case you get lost after zooming:
         self.ui.ResetViewButton.clicked.connect(self.reset_view)
+
+    # Implemented the following method for threading:
+    @Slot(float, bool)
+    def receive_live_measurement(self, force, moving):
+        """Receive a live force measurement and add it to the plot."""
+
+        current_time = time.perf_counter() - self.measurement_start_time
+
+        self.times.append(current_time)
+        self.forces.append(force)
+        self.movement.append(moving)
+
+        self.show_plot()
+
+    # Implemented for threading:
+    @Slot()
+    def start_live_measurement(self):
+        self.times = []
+        self.forces = []
+        self.movement = []
+
+        self.measurement_start_time = time.perf_counter()
+
+        self.live_worker = self.experiment.start_live_measurement()
+
+        self.live_worker.measurement_received.connect(self.receive_live_measurement)
+
+        self.experiment.live_thread.start()
+
+        self.ui.RunButton.setEnabled(False)
+        self.ui.TareButton.setEnabled(False)
+        self.ui.CalibrateButton.setEnabled(False)
+        self.ui.StopButton.setEnabled(True)  # Make the "stop button" available
+        self.ui.ClearPlot.setEnabled(False)
+        self.ui.ResetViewButton.setEnabled(False)
+        self.ui.SaveButton.setEnabled(False)
+
+    # Implemented for threading:
+    @Slot()
+    def stop_live_measurement(self):
+        self.experiment.stop_live_measurement()
+        self.ui.RunButton.setEnabled(True)
+        self.ui.StopButton.setEnabled(False)
+        self.ui.TareButton.setEnabled(True)
+        self.ui.CalibrateButton.setEnabled(True)
+        self.ui.ResetViewButton.setEnabled(True)
+        self.ui.ClearPlot.setEnabled(True)
+        self.ui.SaveButton.setEnabled(True)
+        self.ui.ShowButton.setEnabled(True)
 
     @Slot()
     def refresh_devices(self):
@@ -136,13 +193,15 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
             self.ui.RunButton.setEnabled(False)
+            self.ui.StopButton.setEnabled(False)  # New button for threading
             self.ui.SaveButton.setEnabled(False)
             self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
 
             # Reset any measurements that may have happened
-            self.times = None
-            self.forces = None
+            self.times = []
+            self.forces = []
+            self.movement = []
 
         # Now to update the list:
         # Empty out the box and remove all possible selections:
@@ -167,6 +226,7 @@ class UserInterface(QtWidgets.QMainWindow):
         """Close the Arduino connection when Mjolnir exits."""
         if self.experiment is not None:
             # If you have triggered closeEvent, and you _do_ currently have a device connected, you will close the connection to the device
+            self.experiment.stop_live_measurement()  # Implemented for threading
             self.experiment.close()
 
         event.accept()
@@ -236,8 +296,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.plot_widget.autoRange()
 
         # If you have plotted something, you are allowed to save/reset the view:
-        self.ui.SaveButton.setEnabled(True)
-        self.ui.ResetViewButton.setEnabled(True)
+        # self.ui.SaveButton.setEnabled(True)
+        # self.ui.ResetViewButton.setEnabled(True)
 
     # This activates once you click a port in the "select device" dropdown menu
     @Slot()
@@ -259,13 +319,15 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
             self.ui.RunButton.setEnabled(False)
+            self.ui.StopButton.setEnabled(False)
             self.ui.SaveButton.setEnabled(False)
             self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
 
             # Reset any measurements that may have happened
-            self.times = None
-            self.forces = None
+            self.times = []
+            self.forces = []
+            self.movement = []
 
             return
 
@@ -277,12 +339,14 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.QuickReadButton.setEnabled(False)
             self.ui.CalibrateButton.setEnabled(False)
             self.ui.RunButton.setEnabled(False)
+            self.ui.StopButton.setEnabled(False)
             self.ui.SaveButton.setEnabled(False)
             self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
             # Reset any measurements that may have happened
-            self.times = None
-            self.forces = None
+            self.times = []
+            self.forces = []
+            self.movement = []
 
         # Now we can read out the port of the new device and start a fresh connection, with no other (older) devices connected
         portname = self.ui.DeviceSelectorBox.currentText()
@@ -391,6 +455,7 @@ class UserInterface(QtWidgets.QMainWindow):
                 self.ui.ReferenceValueBox.setValue(reference_force)
                 # Now enable the run button so the user can run a long measurement:
                 self.ui.RunButton.setEnabled(True)
+                self.ui.StopButton.setEnabled(False)
                 # Pop up message saying you have successfully connected to a device
                 QtWidgets.QMessageBox.information(
                     self,
