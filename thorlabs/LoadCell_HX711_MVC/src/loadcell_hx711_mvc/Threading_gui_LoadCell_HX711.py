@@ -181,6 +181,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # close the old connection and reset the GUI.
         # if self.experiment is not None means that an instance of MjolnirExperiment was made at some point. It could be that, at some point, it was plugged out, and so it cannot be found in the resource list anymore. In that case:
         if self.experiment is not None and current_device not in resources:
+            self.experiment.stop_live_measurement()
             self.experiment.close()  # Close the connection that you had
             self.experiment = None  # Set the experiment state to None (because we are _not_ connected to anything right now)
 
@@ -307,6 +308,7 @@ class UserInterface(QtWidgets.QMainWindow):
             # If index is 0, it means that you are still on "select device..." and have not selected anything yet
             if self.experiment is not None:
                 # This happens if you had selected something earlier but then clicked on "select device..." again afterwards. You close your connection to the device
+                self.experiment.stop_live_measurement()
                 self.experiment.close()
                 self.experiment = None
 
@@ -333,6 +335,7 @@ class UserInterface(QtWidgets.QMainWindow):
 
         # If another device is already connected, close its connection first:
         if self.experiment is not None:
+            self.experiment.stop_live_measurement()
             self.experiment.close()
             # Reset all buttons:
             self.ui.TareButton.setEnabled(False)

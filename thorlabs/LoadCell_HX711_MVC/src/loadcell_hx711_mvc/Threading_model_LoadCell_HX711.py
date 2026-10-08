@@ -41,9 +41,8 @@ class LiveMeasurementWorker(QObject):
 
         self.running = True
 
-        self.device.start_measurement()
-
         try:
+            self.device.start_measurement()
             while self.running:
                 force, moving = self.device.measure()
                 self.measurement_received.emit(force, moving)
@@ -51,6 +50,7 @@ class LiveMeasurementWorker(QObject):
         finally:
             self.device.stop_measurement()
             self.finished.emit()
+            self.thread().quit()
 
     def stop(self):
         """Request the worker to stop measuring."""
@@ -427,7 +427,6 @@ class MjolnirExperiment:
 
         self.live_thread.started.connect(self.live_worker.run)
 
-        self.live_worker.finished.connect(self.live_thread.quit)
         self.live_worker.finished.connect(self.live_worker.deleteLater)
         self.live_thread.finished.connect(self.live_thread.deleteLater)
 
@@ -435,10 +434,17 @@ class MjolnirExperiment:
 
     # Implemented for threading:
     def stop_live_measurement(self):
-        """Request the live measurement worker to stop."""
+        """Stop the live measurement worker and wait for its thread to finish."""
 
         if self.live_worker is not None:
             self.live_worker.stop()
+
+        # Make sure that you also wait for the worker to have stopped before you do anything else:
+        if self.live_thread is not None:
+            self.live_thread.wait()
+
+        self.live_worker = None
+        self.live_thread = None
 
 
 if __name__ == "__main__":
