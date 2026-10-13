@@ -87,6 +87,7 @@ class Ui_MainWindow(object):
         self.QuickReadOutputBox.setReadOnly(True)
         self.QuickReadOutputBox.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         self.QuickReadOutputBox.setDecimals(4)
+        self.QuickReadOutputBox.setMinimum(-100000000.000000000000000)
         self.QuickReadOutputBox.setMaximum(100000000.000000000000000)
 
         self.verticalLayout_3.addWidget(self.QuickReadOutputBox)
@@ -124,11 +125,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.ShowButton = QPushButton(self.centralwidget)
-        self.ShowButton.setObjectName(u"ShowButton")
-
-        self.horizontalLayout.addWidget(self.ShowButton)
-
         self.SaveButton = QPushButton(self.centralwidget)
         self.SaveButton.setObjectName(u"SaveButton")
 
@@ -185,7 +181,6 @@ class Ui_MainWindow(object):
         self.QuickReadOutputBox.setSuffix(QCoreApplication.translate("MainWindow", u" N", None))
         self.RunButton.setText(QCoreApplication.translate("MainWindow", u"Start Measurement", None))
         self.StopButton.setText(QCoreApplication.translate("MainWindow", u"Stop Measurement", None))
-        self.ShowButton.setText(QCoreApplication.translate("MainWindow", u"Show Plot", None))
         self.SaveButton.setText(QCoreApplication.translate("MainWindow", u"Save CSV", None))
         self.ResetViewButton.setText(QCoreApplication.translate("MainWindow", u"Reset View", None))
         self.ClearPlot.setText(QCoreApplication.translate("MainWindow", u"Clear Plot", None))

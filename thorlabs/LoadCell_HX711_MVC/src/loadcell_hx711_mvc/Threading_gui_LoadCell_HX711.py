@@ -88,8 +88,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.StopButton.setEnabled(False)
         # Don't have the "save plot" button pop up until you have finished running a long measurement:
         self.ui.SaveButton.setEnabled(False)
-        # Don't have the "show plot" button pop up until you have created a plot:
-        self.ui.ShowButton.setEnabled(False)
         # Don't have the "reset view" button pop up until you created a plot:
         self.ui.ResetViewButton.setEnabled(False)
         self.ui.ClearPlot.setEnabled(False)
@@ -111,8 +109,8 @@ class UserInterface(QtWidgets.QMainWindow):
         # Once you have run a measurement, you can also stop:
         self.ui.StopButton.clicked.connect(self.stop_live_measurement)
 
-        # Once a long measurement has been done, you can draw your plot:
-        self.ui.ShowButton.clicked.connect(self.show_plot)
+        # # Once a long measurement has been done, you can draw your plot:
+        # self.ui.ShowButton.clicked.connect(self.show_plot)
 
         # Once you have made a nice plot, you can save it:
         self.ui.SaveButton.clicked.connect(self.save_data)
@@ -189,7 +187,6 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.ResetViewButton.setEnabled(True)
         self.ui.ClearPlot.setEnabled(True)
         self.ui.SaveButton.setEnabled(True)
-        self.ui.ShowButton.setEnabled(True)
         self.ui.QuickReadButton.setEnabled(True)
 
     @Slot()
@@ -225,7 +222,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.RunButton.setEnabled(False)
             self.ui.StopButton.setEnabled(False)  # New button for threading
             self.ui.SaveButton.setEnabled(False)
-            self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
 
             # Reset any measurements that may have happened
@@ -279,10 +275,10 @@ class UserInterface(QtWidgets.QMainWindow):
         comment, accepted = QInputDialog.getText(
             self,
             "Measurement comments",
-            "Enter an optional comment for this measurement:",
+            "Enter an optional comment for this measurement: (leave blank if you don't want to write anything)",
         )
         if not accepted:
-            return
+            comment = ""
 
         filename, _ = (
             QtWidgets.QFileDialog.getSaveFileName(  # this getSaveFileName returns two things, a filename and a filter. We don't need the filter for anything, so just assign that to a throwaway variable underscore (_)
@@ -379,7 +375,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.RunButton.setEnabled(False)
             self.ui.StopButton.setEnabled(False)
             self.ui.SaveButton.setEnabled(False)
-            self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
 
             # Reset measurement data
@@ -423,7 +418,6 @@ class UserInterface(QtWidgets.QMainWindow):
             self.ui.RunButton.setEnabled(False)
             self.ui.StopButton.setEnabled(False)
             self.ui.SaveButton.setEnabled(False)
-            self.ui.ShowButton.setEnabled(False)
             self.ui.ResetViewButton.setEnabled(False)
 
             # Reset measurement data
@@ -477,9 +471,6 @@ class UserInterface(QtWidgets.QMainWindow):
             duration=duration
         )
 
-        # A measurement has now been completed, so the plot can be shown
-        self.ui.ShowButton.setEnabled(True)
-
         # Have a little dialog box pop up when the measurement is done:
         QtWidgets.QMessageBox.information(
             self,
@@ -518,7 +509,6 @@ class UserInterface(QtWidgets.QMainWindow):
         # Disable the ability to save if you can't see the plot:
         self.ui.SaveButton.setEnabled(False)
         # This is mainly implemented because a user might forget what they are storing, and therefore confuse measurements. Better to be able to see what you're saving before you actually save it
-        self.ui.ShowButton.setEnabled(False)
 
     @Slot()
     def tare(self):
