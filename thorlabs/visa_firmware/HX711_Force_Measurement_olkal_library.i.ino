@@ -11,13 +11,14 @@
 // Arduino pins:
 const int HX711_dout = 2; // Arduino pin #4 (Used to be 4, updated to 2)
 const int HX711_sck = 3;  // Arduino pin #5 (Used to be 5, updated to 3)
-const int STAGE_IO = 4;   // Translation stage I/O signal
+const int STAGE_IO_1 = 4;   // Translation stage I/O signal (first port)
+const int STAGE_IO_2 = 5;   // Translation stage I/O signal (second port)
 
 //HX711 constructor:
 HX711_ADC LoadCell(HX711_dout, HX711_sck); // Creating an object called LoadCell using these specific Arduino pins
 
 // Identification string:
-const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.4.2";
+const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.5.1";
 
 // A variable to keep track of whether we are measuring or not (needed for implementation of continuous readout):
 bool measuring = false;
@@ -31,7 +32,8 @@ void setup() {
   // Serial.setTimeout(100); // Prevents the Arduino from getting stuck indefinitely if there is something wrong with the serial communication -> This is OBSOLETE after changing the loop to check for while( Serial.available()) below
 
 
-  pinMode(STAGE_IO, INPUT); // Implemented to make sure that the stage I/O is included -> configured it so that this pin is an input pind
+  pinMode(STAGE_IO_1, INPUT); // Implemented to make sure that the stage I/O is included -> configured it so that this pin is an input pind
+  pinMode(STAGE_IO_2, INPUT); // Implemented to make sure that the stage I/O is included -> configured it so that this pin is an input pind
   // pinMode(STAGE_IO, INPUT_PULLDOWN); // For troubleshooting when I/O didn't work
 
   Serial.println("STARTING"); // Used for troubleshooting
@@ -72,12 +74,15 @@ void loop() {
 
     if (measuring) { // If we are in the "measuring" state, constantly print out new data whenever it is available (continuous readout)
       float value = LoadCell.getData();
-      int moving = digitalRead(STAGE_IO); // Read whether the stage is moving (returns a 0 if not moving, a 1 if it is moving)
+      int IO_port1_reading = digitalRead(STAGE_IO_1); // Read whether the stage is moving (returns a 0 if not moving, a 1 if it is moving)
+      int IO_port2_reading = digitalRead(STAGE_IO_2); // Read whether the stage is moving (returns a 0 if not moving, a 1 if it is moving)
 
       Serial.print("DATA,"); // Have every line with data start with "DATA," so that you can distinguish this from other things that the Arduino is printing (related to taring or calibration, for example)
       Serial.print(value);
       Serial.print(","); // Separate the next value, which is whether the translation stage is returning a "moving" (1) or "not moving" (0) signal
-      Serial.println(moving); //
+      Serial.print(IO_port1_reading); //
+      Serial.print(","); // Separate the next value, which is whether the translation stage is returning a "moving" (1) or "not moving" (0) signal
+      Serial.println(IO_port2_reading); //
     }
   }
 

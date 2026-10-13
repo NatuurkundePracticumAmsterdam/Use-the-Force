@@ -27,7 +27,7 @@ def model_list_resources():
 class LiveMeasurementWorker(QObject):
     """Worker that continuously reads measurements from the load cell."""
 
-    measurement_received = Signal(float, bool)
+    measurement_received = Signal(float, bool, bool)
     finished = Signal()
 
     def __init__(self, device):
@@ -44,8 +44,10 @@ class LiveMeasurementWorker(QObject):
         try:
             self.device.start_measurement()
             while self.running:
-                force, moving = self.device.measure()
-                self.measurement_received.emit(force, moving)
+                force, io_port_1_reading, io_port_2_reading = self.device.measure()
+                self.measurement_received.emit(
+                    force, io_port_1_reading, io_port_2_reading
+                )
 
         finally:
             self.device.stop_measurement()
@@ -108,11 +110,13 @@ class MjolnirExperiment:
         self.device.start_measurement()
 
         try:
-            single_measurement, moving = self.device.measure()
+            single_measurement, io_port_1_reading, io_port_2_reading = (
+                self.device.measure()
+            )
         finally:
             self.device.stop_measurement()
 
-        return single_measurement, moving
+        return single_measurement, io_port_1_reading, io_port_2_reading
 
     def take_average_measurement(
         self, number_of_measurements=2
@@ -134,14 +138,16 @@ class MjolnirExperiment:
             )
 
         measurement_list = []
-        moving_list = []
+        io_port_1_reading_list = []
+        io_port_2_reading_list = []
 
         # Carry out measurement multiple times and store in a list:
         for i in range(number_of_measurements):
-            force, moving = self.device.measure()
+            force, io_port_1_reading, io_port_2_reading = self.device.measure()
             measurement_list.append(force)
             # for now, we don't really need to know whether it is moving when you are averaging, or do you?
-            moving_list.append(moving)
+            io_port_1_reading_list.append(io_port_1_reading)
+            io_port_2_reading_list.append(io_port_2_reading)
 
         # Take the average of multiple readings:
         average_measured_force = np.mean(measurement_list)
@@ -155,9 +161,15 @@ class MjolnirExperiment:
         )
 
         # For now, just have your moving list, but you need to think about what this physically means before you actually start using it, since we don't really have an "average movement" quantity
-        moving = moving_list[-1]
+        io_port_1_reading = io_port_1_reading_list[-1]
+        io_port_2_reading = io_port_2_reading_list[-1]
 
-        return average_measured_force, average_measured_force_err, moving
+        return (
+            average_measured_force,
+            average_measured_force_err,
+            io_port_1_reading,
+            io_port_2_reading,
+        )
 
     # def measure_over_time_with_uncertainty(
     #     self, duration, interval=0.01, number_of_measurements=10
@@ -269,7 +281,8 @@ class MjolnirExperiment:
         times = []
         forces = []
         uncertainties = []
-        movement = []
+        io_port_1_readings = []
+        io_port_2_readings = []
 
         # Start the continuous stream of measurements.
         self.device.start_measurement()
@@ -278,8 +291,8 @@ class MjolnirExperiment:
 
         while True:
             # Take several consecutive measurements and calculate their average.
-            force, uncertainty, moving = self.take_average_measurement(
-                number_of_measurements
+            force, uncertainty, io_port_1_reading, io_port_2_reading = (
+                self.take_average_measurement(number_of_measurements)
             )
 
             # Record the time at which the average was completed.
@@ -288,7 +301,8 @@ class MjolnirExperiment:
             times.append(current_time)
             forces.append(force)
             uncertainties.append(uncertainty)
-            movement.append(moving)
+            io_port_1_readings.append(io_port_1_reading)
+            io_port_2_readings.append(io_port_2_reading)
 
             if current_time >= duration:
                 break
@@ -300,7 +314,8 @@ class MjolnirExperiment:
             np.array(times),
             np.array(forces),
             np.array(uncertainties),
-            np.array(movement),
+            np.array(io_port_1_readings),
+            np.array(io_port_2_readings),
         )
 
     # def test_average_measurement_time(
@@ -390,7 +405,8 @@ class MjolnirExperiment:
 
         times = []
         forces = []
-        movement = []
+        io_port_1_readings = []
+        io_port_2_readings = []
 
         # Start the continuous stream of outputs:
         self.device.start_measurement()
@@ -400,13 +416,14 @@ class MjolnirExperiment:
 
             while True:
                 # Read the next measurement from the continuous stream
-                force, moving = self.device.measure()
+                force, io_port_1_reading, io_port_2_reading = self.device.measure()
 
                 current_time = time.perf_counter() - start_time
 
                 times.append(current_time)
                 forces.append(force)
-                movement.append(moving)
+                io_port_1_readings.append(io_port_1_reading)
+                io_port_2_readings.append(io_port_2_reading)
 
                 if current_time >= duration:
                     break
@@ -415,7 +432,12 @@ class MjolnirExperiment:
             # Stop the continuous stream of outputs:
             self.device.stop_measurement()
 
-        return np.array(times), np.array(forces), np.array(movement)
+        return (
+            np.array(times),
+            np.array(forces),
+            np.array(io_port_1_readings),
+            np.array(io_port_2_readings),
+        )
 
     # Implemented for threading:
     def start_live_measurement(self):

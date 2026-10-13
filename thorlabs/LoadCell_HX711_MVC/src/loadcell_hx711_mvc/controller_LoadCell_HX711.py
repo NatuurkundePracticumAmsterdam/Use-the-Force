@@ -149,10 +149,11 @@ class ArduinoHX711Device:
 
                 force = float(values[1])  # This should be the force readout
                 # This should be the translation stage I/O (1 or 0):
-                moving = bool(int(values[2]))
+                io_port_1_reading = bool(int(values[2]))
+                io_port_2_reading = bool(int(values[3]))
 
                 # return float(response.split(",", 1)[1])
-                return force, moving
+                return force, io_port_1_reading, io_port_2_reading
 
 
 if __name__ == "__main__":

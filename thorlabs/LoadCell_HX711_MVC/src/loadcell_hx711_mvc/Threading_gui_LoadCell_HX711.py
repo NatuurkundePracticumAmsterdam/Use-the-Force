@@ -41,7 +41,8 @@ class UserInterface(QtWidgets.QMainWindow):
         # For the plot that will be made eventually:
         self.times = []
         self.forces = []
-        self.movement = []
+        self.io_port_1_readings = []
+        self.io_port_2_readings = []
 
         # To keep track of whether you have a measurement that you are about to override:
         self.has_live_measurement = False  # You do not have any measurement when you open the app for the first time
@@ -120,8 +121,8 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.ResetViewButton.clicked.connect(self.reset_view)
 
     # Implemented the following method for threading:
-    @Slot(float, bool)
-    def receive_live_measurement(self, force, moving):
+    @Slot(float, bool, bool)
+    def receive_live_measurement(self, force, io_port_1_reading, io_port_2_reading):
         """Receive a live force measurement and add it to the plot."""
 
         # Update the status: you now have live measurements
@@ -131,7 +132,8 @@ class UserInterface(QtWidgets.QMainWindow):
 
         self.times.append(current_time)
         self.forces.append(force)
-        self.movement.append(moving)
+        self.io_port_1_readings.append(io_port_1_reading)
+        self.io_port_2_readings.append(io_port_2_reading)
 
         self.show_plot()
 
@@ -156,7 +158,8 @@ class UserInterface(QtWidgets.QMainWindow):
         # Reset all previous measurements
         self.times = []
         self.forces = []
-        self.movement = []
+        self.io_port_1_readings = []
+        self.io_port_2_readings = []
 
         self.measurement_start_time = time.perf_counter()
 
@@ -228,7 +231,8 @@ class UserInterface(QtWidgets.QMainWindow):
             # Reset any measurements that may have happened
             self.times = []
             self.forces = []
-            self.movement = []
+            self.io_port_1_readings = []
+            self.io_port_2_readings = []
 
             self.has_live_measurement = False
             self.ui.plot_widget.clear()
@@ -271,7 +275,14 @@ class UserInterface(QtWidgets.QMainWindow):
     def save_data(self):
         """Save the most recent measurement as a CSV file."""
 
-        # TO DO: Add new info in header: measurement settings (calibration load, timesteps, # averages)
+        # Ask the user for an optional comment to include in the CSV.
+        comment, accepted = QInputDialog.getText(
+            self,
+            "Measurement comments",
+            "Enter an optional comment for this measurement:",
+        )
+        if not accepted:
+            return
 
         filename, _ = (
             QtWidgets.QFileDialog.getSaveFileName(  # this getSaveFileName returns two things, a filename and a filter. We don't need the filter for anything, so just assign that to a throwaway variable underscore (_)
@@ -291,13 +302,21 @@ class UserInterface(QtWidgets.QMainWindow):
             with open(filename, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
 
-                # Three columns: time, force, moving (yes/no)
-                writer.writerow(["Time_s", "Force_N", "Moving"])
+                # Write the optional comment as the first row.
+                writer.writerow([comment])
 
-                for time_s, force_n, moving_yesno in zip(
-                    self.times, self.forces, self.movement
+                # Four columns: time, force, moving (yes/no) (per IO port)
+                writer.writerow(
+                    ["Time_s", "Force_N", "IO_port_1_reading", "IO_port_2_reading"]
+                )
+
+                for time_s, force_n, io_port_1, io_port_2 in zip(
+                    self.times,
+                    self.forces,
+                    self.io_port_1_readings,
+                    self.io_port_2_readings,
                 ):
-                    writer.writerow([time_s, force_n, moving_yesno])
+                    writer.writerow([time_s, force_n, io_port_1, io_port_2])
 
     @Slot()
     def show_plot(self):
@@ -366,7 +385,8 @@ class UserInterface(QtWidgets.QMainWindow):
             # Reset measurement data
             self.times = []
             self.forces = []
-            self.movement = []
+            self.io_port_1_readings = []
+            self.io_port_2_readings = []
             self.has_live_measurement = False
 
             return
@@ -409,7 +429,8 @@ class UserInterface(QtWidgets.QMainWindow):
             # Reset measurement data
             self.times = []
             self.forces = []
-            self.movement = []
+            self.io_port_1_readings = []
+            self.io_port_2_readings = []
             self.has_live_measurement = False
             self.ui.plot_widget.clear()
 
@@ -447,10 +468,13 @@ class UserInterface(QtWidgets.QMainWindow):
         # TO DO: implement extra feature -- if there is already a previous measurement: give a warning pop saying that you are starting a new measurement and previous data will be deleted
         duration = self.ui.MeasureDurationBox.value()
 
-        self.times, self.forces, self.movement = (
-            self.experiment.measure_over_time_with_single_measurements(
-                duration=duration
-            )
+        (
+            self.times,
+            self.forces,
+            self.io_port_1_readings,
+            self.io_port_2_readings,
+        ) = self.experiment.measure_over_time_with_single_measurements(
+            duration=duration
         )
 
         # A measurement has now been completed, so the plot can be shown
@@ -483,7 +507,8 @@ class UserInterface(QtWidgets.QMainWindow):
         # Clear all measurement data
         self.times = []
         self.forces = []
-        self.movement = []
+        self.io_port_1_readings = []
+        self.io_port_2_readings = []
 
         # There is no longer a measurement to overwrite
         self.has_live_measurement = False
@@ -510,7 +535,9 @@ class UserInterface(QtWidgets.QMainWindow):
     @Slot()
     def quick_measure(self):
         """Perform a quick instantaneous measurement. The units returned by this are the same units as the calibration factor that was used"""
-        result, movement_state = self.experiment.take_single_measurement()
+        result, io_port_1_reading, io_port_2_reading = (
+            self.experiment.take_single_measurement()
+        )
         self.ui.QuickReadOutputBox.setValue(result)
 
     @Slot()
