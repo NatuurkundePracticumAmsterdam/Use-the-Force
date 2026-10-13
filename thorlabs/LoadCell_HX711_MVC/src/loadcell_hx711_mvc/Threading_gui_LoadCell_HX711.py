@@ -278,7 +278,7 @@ class UserInterface(QtWidgets.QMainWindow):
             "Enter an optional comment for this measurement: (leave blank if you don't want to write anything)",
         )
         if not accepted:
-            comment = ""
+            return
 
         filename, _ = (
             QtWidgets.QFileDialog.getSaveFileName(  # this getSaveFileName returns two things, a filename and a filter. We don't need the filter for anything, so just assign that to a throwaway variable underscore (_)
