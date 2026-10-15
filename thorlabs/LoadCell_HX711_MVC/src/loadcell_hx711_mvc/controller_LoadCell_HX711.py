@@ -30,9 +30,6 @@ class ArduinoHX711Device:
         self.device.baud_rate = 57600  # Set the baud rate -> the speed at which the serial communication happens. The firmware has this at 57600
         self.device.timeout = 5000
 
-        # This wait_until_ready is not needed for the arduino nano -- This was needed for test measurements using a classic Arduino, but the nano seems to be much faster and doesn't need this
-        # self.wait_until_ready()  # Call this method when the class is initialized to make sure that the Arduino does not receive commands before it has set itself up
-
     def close(self):
         """Close the connection to the Arduino."""
         if self.device is not None:
@@ -78,22 +75,9 @@ class ArduinoHX711Device:
         Returns:
             String: Confirmation that calibration completed successfully."""
 
-        # print("Place the reference mass on the load cell")
-        # input("Press Enter when the mass is in its place ...")
-
         self.device.write(f"CALIBRATE {reference_mass}")
         response = self.device.read()
         return response
-
-    # def measure(self): -> This is now OBSOLETE, since we are using continuous output. See new version using continuous readout architecture below:
-    #     """Read out mass measurement.
-
-    #     Returns:
-    #         Float: Mass as measured by load cell. The units of this measurement are the same as the units that were used during calibration.
-    #     """
-    #     self.device.write("MEASURE?")
-    #     response = self.device.read()
-    #     return float(response)
 
     # Meausring using continuous readout:
     def measure(self):
@@ -152,7 +136,6 @@ class ArduinoHX711Device:
                 io_port_1_reading = bool(int(values[2]))
                 io_port_2_reading = bool(int(values[3]))
 
-                # return float(response.split(",", 1)[1])
                 return force, io_port_1_reading, io_port_2_reading
 
 
@@ -160,21 +143,5 @@ if __name__ == "__main__":
     print(list_resources())
 
     my_load_cell = ArduinoHX711Device("ASRL/dev/cu.usbmodem1101::INSTR")
-
-    # print(my_load_cell.tare())
-    # print(my_load_cell.measure())
-    # # Pen cap mass: 2.277 g; full red pen mass: 8.208 g; blue pen: 6.479 g; thin wire: 0.338 g (quick: g to N -> mass/1000 * 9.81)
-    # print(my_load_cell.calibrate(2.277))
-
-    # print(my_load_cell.measure())
-
-    print(my_load_cell.get_identification())
-
-    print(my_load_cell.start_measurement())
-
-    for _ in range(20):
-        print(my_load_cell.read_measurement())
-
-    print(my_load_cell.stop_measurement())
 
     my_load_cell.close()
