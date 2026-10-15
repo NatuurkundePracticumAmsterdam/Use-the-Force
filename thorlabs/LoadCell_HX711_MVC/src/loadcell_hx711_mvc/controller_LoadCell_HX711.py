@@ -1,5 +1,3 @@
-# import time
-
 import pyvisa
 
 rm = pyvisa.ResourceManager("@py")  # instance of resource manager
@@ -15,13 +13,13 @@ def list_resources():  # Function used to print out all available ports
 
 
 class ArduinoHX711Device:
-    """A class to create an Arduino-HX711 device."""
+    """Interface for an Arduino connected to an HX711 load cell."""
 
     def __init__(self, port_name):
         """Initialize Arduino device and start pyvisa communication with device.
 
         Args:
-            port_name (str, optional): usb port with Arduino attached. Defaults to "ASRL/dev/cu.usbmodem101::INSTR".
+            port_name (str): usb port with Arduino attached, e.g. "ASRL/dev/cu.usbmodem101::INSTR".
         """
         self.device = rm.open_resource(
             port_name, read_termination="\r\n", write_termination="\n"
@@ -37,10 +35,13 @@ class ArduinoHX711Device:
             self.device = None
 
     def wait_until_ready(self):
-        """Method that waits until the Arduino has initialized (and tared) properly before python sends commands.
+        """Wait until the Arduino reports that it is ready.
+
+        Reads and prints messages from the Arduino until the "READY"
+        message is received.
 
         Returns:
-            Nothing.
+            None
         """
         while True:
             message = self.device.read()
@@ -49,10 +50,10 @@ class ArduinoHX711Device:
                 break
 
     def get_identification(self):
-        """Request firmware version of Thorlabs Mjolnir.
+        """Request the Arduino's firmware identification string.
 
         Returns:
-            String: Firmware version of connected device.
+            str: The identification string returned by the firmware.
         """
         return self.device.query("*IDN?")
 
@@ -60,7 +61,8 @@ class ArduinoHX711Device:
         """Tare the load cell.
 
         Returns:
-            String: Confirmation that tare was completed successfully.
+            str: The response returned by the Arduino after the tare
+                command.
         """
         self.device.write("TARE")
         response = self.device.read()
@@ -70,10 +72,19 @@ class ArduinoHX711Device:
         """Calibrate the load cell using a reference mass.
 
         Args:
-            reference_mass (_float_): Mass of the reference object. The unit used to calibrate the load cell is also the unit that all subsequent measurements return. If you calibrate using N, returned measurements will be in N. If you calibrate in kg, returned measurements will be in kg.
+            reference_mass (float): Mass of the reference object, expressed
+                in the unit expected by the Arduino firmware. In the case of the Mjolnir experiment, use N.
 
         Returns:
-            String: Confirmation that calibration completed successfully."""
+            str: The response returned by the Arduino after the calibration
+                command.
+
+        Note:
+            The units of subsequent measurements depend on how the firmware
+            interprets the reference value. For force measurements in
+            newtons, the reference value should be expressed in newtons if
+            required by the firmware's calibration procedure.
+        """
 
         self.device.write(f"CALIBRATE {reference_mass}")
         response = self.device.read()
@@ -81,10 +92,11 @@ class ArduinoHX711Device:
 
     # Meausring using continuous readout:
     def measure(self):
-        """Read a single measurement from the continuous data stream.
+        """Read the next measurement from the continuous data stream.
 
         Returns:
-                    Float: Load cell measurement. The units of this measurement are the same as the units that were used during calibration.
+            tuple[float, bool, bool]: The measured force and the states of
+                the two stage I/O ports, respectively.
         """
         return self.read_measurement()
 
@@ -93,7 +105,8 @@ class ArduinoHX711Device:
         """Start continuous measurement on the Arduino.
 
         Returns:
-            String: Confirmation that continuous measurement has started.
+            str: The response returned by the Arduino after the start
+                command.
         """
         self.device.write("START")  # Give command to turn on "measuring" state
         response = self.device.read()
@@ -102,8 +115,10 @@ class ArduinoHX711Device:
     def stop_measurement(self):
         """Stop continuous measurement on the Arduino.
 
+        Waits until the Arduino reports that the measuring state has stopped.
+
         Returns:
-            String: Confirmation that continuous measurement has stopped.
+            str: The confirmation message returned by the Arduino.
         """
         self.device.write("STOP")  # Give command to turn off "measuring" state
 
@@ -118,8 +133,13 @@ class ArduinoHX711Device:
     def read_measurement(self):
         """Read the next measurement from the continuous data stream.
 
+        Reads messages from the Arduino until a data message is received.
+        The data message is expected to contain the measured force and the
+        states of the two stage I/O ports.
+
         Returns:
-            Float: The next force measurement.
+            tuple[float, bool, bool]: The measured force and the states of
+                I/O port 1 and I/O port 2, respectively.
         """
         while True:
             response = self.device.read()

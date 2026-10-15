@@ -31,6 +31,12 @@ pg.setConfigOption("foreground", "k")
 
 class UserInterface(QtWidgets.QMainWindow):
     def __init__(self):
+        """Initialize the Mjolnir graphical user interface.
+        Set up the user interface, initialize the measurement state, configure
+        the plot, populate the device selector, and connect the GUI controls to
+        their corresponding methods.
+        Initially, no device is connected and measurement-dependent controls
+        are disabled."""
         super().__init__()
 
         self.ui = Ui_MainWindow()
@@ -121,7 +127,16 @@ class UserInterface(QtWidgets.QMainWindow):
     # Implemented the following method for threading:
     @Slot(float, bool, bool)
     def receive_live_measurement(self, force, io_port_1_reading, io_port_2_reading):
-        """Receive a live force measurement and add it to the plot."""
+        """Receive and store a live measurement and update the plot.
+
+        Args:
+        force (float): Measured force.
+        io_port_1_reading (bool): State of stage I/O port 1.
+        io_port_2_reading (bool): State of stage I/O port 2.
+
+        The elapsed measurement time is calculated relative to the start of
+        the measurement. The time, force, and I/O readings are stored, and
+        the plot is refreshed."""
 
         # Update the status: you now have live measurements
         self.has_live_measurement = True
@@ -138,6 +153,17 @@ class UserInterface(QtWidgets.QMainWindow):
     # Implemented for threading:
     @Slot()
     def start_live_measurement(self):
+        """Start continuous live measurement in a separate thread.
+
+        If previous measurement data exist, ask the user to confirm before
+        overwriting them. Reset the stored data, create the measurement worker,
+        connect its measurement signal to the GUI, and start the worker thread.
+
+        Disable controls that should not be used during acquisition and enable
+        the stop button.
+
+        Returns:
+                None"""
 
         if self.has_live_measurement:
             reply = QMessageBox.question(
@@ -179,6 +205,13 @@ class UserInterface(QtWidgets.QMainWindow):
     # Implemented for threading:
     @Slot()
     def stop_live_measurement(self):
+        """Stop live measurement and restore the relevant GUI controls.
+
+        Wait for the measurement worker and its thread to finish, then re-enable
+        the controls that can be used after acquisition.
+
+        Returns:
+        None"""
         self.experiment.stop_live_measurement()
         self.ui.RunButton.setEnabled(True)
         self.ui.StopButton.setEnabled(False)
@@ -191,7 +224,16 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def refresh_devices(self):
-        """Refresh the list of available devices."""
+        """Refresh the list of available Arduino devices.
+
+        Update the device selector with the currently available VISA resources.
+        Preserve the current selection if the connected device remains available.
+
+        If the connected device is no longer available, close its connection,
+        reset the GUI state, and clear the stored measurement data.
+
+        Returns:
+        None"""
         # A method that allows the user to look for new devices that weren't plugged in when the GUI was started up:
         resources = model_list_resources()
 
@@ -253,7 +295,16 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.DeviceSelectorBox.blockSignals(False)
 
     def closeEvent(self, event):  # closeEvent is a special Qt event-handler method
-        """Close the Arduino connection when Mjolnir exits."""
+        """Handle the window-close event.
+
+        Stop any live measurement, close the Arduino connection if a device is
+        connected, and accept the close event.
+
+        Args:
+        event (QCloseEvent): Qt close event triggered when the window closes.
+
+        Returns:
+        None"""
         if self.experiment is not None:
             # If you have triggered closeEvent, and you _do_ currently have a device connected, you will close the connection to the device
             self.experiment.stop_live_measurement()  # Implemented for threading
@@ -263,13 +314,26 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def reset_view(self):
-        """For if you have zoomed around too much and don't know how to get back"""
+        """Reset the plot axes to automatically fit the displayed data.
+
+        Returns:
+        None"""
         # Reset the axes to what they were initially:
         self.ui.plot_widget.autoRange()
 
     @Slot()
     def save_data(self):
-        """Save the most recent measurement as a CSV file."""
+        """Save the current measurement data to a CSV file.
+
+        Ask the user for an optional comment and a destination filename.
+        If the user cancels either dialog, do not save the file.
+
+        Ensure that the filename has a .csv extension and write the comment,
+        column headers, elapsed times, measured forces, and both stage I/O
+        readings to the file.
+
+        Returns:
+        None"""
 
         # Ask the user for an optional comment to include in the CSV.
         comment, accepted = QInputDialog.getText(
@@ -316,7 +380,14 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def show_plot(self):
-        """Display the most recent force measurement as a function of time."""
+        """Update the plot with the stored force measurements.
+
+        Display force as a function of elapsed time using individual data
+        points, clear the previous plot contents, and automatically adjust
+        the axes to fit the data.
+
+        Returns:
+        None"""
 
         self.ui.plot_widget.clear()
 
@@ -336,7 +407,18 @@ class UserInterface(QtWidgets.QMainWindow):
     # This activates once you click a port in the "select device" dropdown menu
     @Slot()
     def device_selected(self):
-        """Connect to the device selected in the device selector."""
+        """Handle changes to the selected Arduino device.
+
+        Connect to the newly selected device or disconnect from the current
+        device if the placeholder option is selected. If a measurement exists,
+        ask the user to confirm before discarding it when switching or
+        disconnecting.
+
+        Update the firmware label, clear measurement data when appropriate,
+        and enable or disable controls according to the connection state.
+
+        Returns:
+        None"""
 
         # If "Select device..." is selected
         if self.ui.DeviceSelectorBox.currentIndex() == 0:
@@ -454,33 +536,17 @@ class UserInterface(QtWidgets.QMainWindow):
             "You have successfully connected to a device. Happy measuring!",
         )
 
-    # The method below is now obsolete, because it does not work with the threading implementation. In its current form, this method will run a measurement for a fixed duration of time (which can then be plotted/saved later)
-    @Slot()
-    def run_measurement(self):
-        """Perform a measurement over the requested duration.
-        The input time duration is in seconds"""
-        # TO DO: implement extra feature -- if there is already a previous measurement: give a warning pop saying that you are starting a new measurement and previous data will be deleted
-        duration = self.ui.MeasureDurationBox.value()
-
-        (
-            self.times,
-            self.forces,
-            self.io_port_1_readings,
-            self.io_port_2_readings,
-        ) = self.experiment.measure_over_time_with_single_measurements(
-            duration=duration
-        )
-
-        # Have a little dialog box pop up when the measurement is done:
-        QtWidgets.QMessageBox.information(
-            self,
-            "Measurement complete",
-            f"The {duration} s measurement has finished. You can now view and save the data.",
-        )
-
     @Slot()
     def pressed_clear(self):
-        """Clear the displayed plot."""
+        """Clear the current measurement and its plot.
+
+        If measurement data exist, ask the user to confirm before deleting
+        them. If confirmed, clear the stored times, forces, and I/O readings,
+        reset the measurement state, and disable controls that require
+        measurement data.
+
+        Returns:
+        None"""
 
         if self.has_live_measurement:
             reply = QMessageBox.question(
@@ -512,7 +578,10 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def tare(self):
-        """Tare the Arduino using the MjolnirExperiment class"""
+        """Tare the load cell and notify the user when the operation finishes.
+
+        Returns:
+        None"""
         self.experiment.tare()
 
         # Have a little dialog box pop up when the tare has completed successfully:
@@ -524,7 +593,13 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def quick_measure(self):
-        """Perform a quick instantaneous measurement. The units returned by this are the same units as the calibration factor that was used"""
+        """Acquire a single force measurement and display the result.
+
+        Read the next available measurement from the load cell and display
+        the measured force in the quick-read output box.
+
+        Returns:
+        None"""
         result, io_port_1_reading, io_port_2_reading = (
             self.experiment.take_single_measurement()
         )
@@ -532,7 +607,17 @@ class UserInterface(QtWidgets.QMainWindow):
 
     @Slot()
     def calibrate(self):
-        """Calibrate the sensor. You do this by placing an object with a known weight (gravitational force) onto the sensor and typing in the force of the reference object"""
+        """Calibrate the load cell using a reference force.
+
+        Prompt the user to enter the known force exerted by a
+        reference object, expressed in newtons. Send the value to the experiment
+        for calibration.
+
+        If calibration succeeds, display the reference force and enable
+        continuous measurement. Otherwise, display a warning.
+
+        Returns:
+        None"""
 
         # Make a dialog box that pops up when you click calibrate
         dialog = QInputDialog(self)
@@ -579,6 +664,13 @@ class UserInterface(QtWidgets.QMainWindow):
 
 
 def main():
+    """Launch the Mjolnir graphical user interface.
+
+    Create the Qt application, initialize and display the main window,
+    and start the application's event loop.
+
+    Returns:
+    None"""
     app = QtWidgets.QApplication(sys.argv)
     ui = UserInterface()
     ui.show()
