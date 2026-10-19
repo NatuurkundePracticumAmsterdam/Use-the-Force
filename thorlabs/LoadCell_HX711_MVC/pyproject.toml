@@ -29,6 +29,10 @@ Mjolnir = "loadcell_hx711_mvc.Threading_gui_LoadCell_HX711:main" # This version 
 requires = ["uv_build>=0.9.26,<0.10.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "loadcell_hx711_mvc"
+module-root = "src"
+
 [tool.poe.tasks.compile] # Useful: just type "poe compile" into the terminal in order to compile your .ui file
 shell = """
 pyside6-uic src/loadcell_hx711_mvc/DesignerGuiMjolnir.ui --output src/loadcell_hx711_mvc/ui_Mjolnir_designer.py
