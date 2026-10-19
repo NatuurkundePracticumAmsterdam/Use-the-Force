@@ -8,11 +8,10 @@ Mjolnir is a Python application developed for the Use-The-Force experiment. It p
 
 - **Hardware communication:** Connect to an Arduino-based HX711 force-sensor setup through a serial interface using PyVISA.
 - **Force calibration:** Tare the sensor and calibrate it against a known reference force.
-- **Single and averaged measurements:** Acquire force measurements and calculate averages with their associated statistical uncertainties.
+- **Single measurements:** Acquire force measurements.
 - **Live measurements:** Monitor force as a function of time while the experiment is running.
 - **Live visualisation:** Display measurement data in real time using PyQtGraph.
 - **Data export:** Save measurement results to CSV files for further analysis.
-- **Command-line interface:** Perform measurement operations through an interactive terminal interface.
 
 ## Requirements
 
@@ -72,41 +71,12 @@ The general measurement workflow is:
 
 1. Connect to the force-sensor device.
 2. Tare the sensor to establish the zero-force reference.
-3. Calibrate the sensor using a known reference force, if required.
+3. Calibrate the sensor using a known reference force.
 4. Start a measurement and monitor the force data.
 5. Inspect the resulting plots.
 6. Save the measurement data to a CSV file for further analysis.
 
 The threaded implementation allows the GUI to remain responsive while measurement data are acquired and displayed.
-
-Two additional entry points are available:
-
-```bash
-uv run ObsoleteMjolnir
-```
-
-Launches the earlier, non-threaded graphical interface.
-
-```bash
-uv run CLI-Mjolnir
-```
-
-Launches the interactive command-line interface.
-
-The non-threaded GUI is retained for compatibility and for tasks where live plotting is not required.
-
-### Interactive command-line interface
-
-The interactive terminal interface supports a persistent experiment session. Its available operations include:
-
-- `connect`: Connect to the force-sensor device.
-- `list`: List available VISA resources.
-- `tare`: Establish the zero-force reference.
-- `calibrate`: Calibrate using a known reference force.
-- `measure`: Perform measurements.
-- `quit`: End the session.
-
-The command-line interface is useful when measurements are needed without the graphical interface.
 
 ## Hardware and communication
 
@@ -135,8 +105,6 @@ The main components are:
 | Controller | Communicates with the Arduino and handles low-level device operations. |
 | Model | Manages the experiment, measurement operations, calibration and measurement data. |
 | View / GUI | Provides the graphical interface for controlling the experiment and displaying results. |
-| Threading layer | Acquires measurements in a worker thread so that the GUI can update during data acquisition. |
-| Interactive CLI | Provides a terminal-based interface to the experiment model. |
 
 ### Main modules
 
@@ -147,12 +115,21 @@ The source code is located in `src/loadcell_hx711_mvc/`.
 | `controller_LoadCell_HX711.py` | Handles device communication and low-level force-sensor operations. |
 | `Threading_model_LoadCell_HX711.py` | Implements the experiment model and threaded measurement functionality. |
 | `Threading_gui_LoadCell_HX711.py` | Implements the live, threaded graphical interface. |
-| `gui_LoadCell_HX711.py` | Contains the earlier, non-threaded graphical interface. |
-| `interactive_cli_LoadCell_HX711.py` | Implements the interactive command-line interface. |
-| `ui_Mjolnir_designer.py` | Generated Python interface for the original Qt Designer GUI. |
 | `Threading_ui_Mjolnir_designer.py` | Generated Python interface for the threaded Qt Designer GUI. |
 
 The Qt Designer `.ui` files define the GUI layouts, while the corresponding generated Python modules provide the interface classes used by the application.
+
+## Obsolete modules 
+
+This is located in `ObsoluteOrUnusedFeatures/`, and contains the non-threaded implementation of the Mjolnir experiment, along with some unused or not completely developed features such as the CLI. 
+
+| Main modules | Purpose |
+|---|---|
+| `gui_LoadCell_HX711.py` | Contains the earlier, non-threaded graphical interface. |
+| `interactive_cli_LoadCell_HX711.py` | Implements the interactive command-line interface. |
+| `ui_Mjolnir_designer.py` | Generated Python interface for the original Qt Designer GUI. |
+| `interactive_cli_LoadCell_HX711.py` | An interactive CLI for the Mjolnir experiment. This module is not fully developed. |
+| `cli_LoadCell_HX711.py` | A starter version of the CLI for the Mjolnir experiment, but this implementation does not work well with the current way UTF works. |
 
 ## Development
 
@@ -165,16 +142,16 @@ If a Qt Designer `.ui` file is modified, regenerate its corresponding Python mod
 The project defines two Poe tasks:
 
 ```bash
-poe compile
-```
-
-Regenerates the Python interface for the original GUI.
-
-```bash
 poe threadcompile
 ```
 
 Regenerates the Python interface for the threaded GUI.
+
+```bash
+poe compile
+```
+
+Regenerates the Python interface for the original GUI, used in `ObsoluteOrUnusedFeatures/`.
 
 These commands require Poe, provided by the `poethepoet` package, to be available in the environment.
 
@@ -207,4 +184,4 @@ Add the project's chosen open-source licence here before publishing the package.
 
 ## Acknowledgements
 
-Developed for the Use-The-Force experiment to support force measurements using the Thorlabs setup.
+Developed for the Use-The-Force experiment in the physics practical courses at the Vrije Universiteit Amsterdam and University of Amsterdam.
