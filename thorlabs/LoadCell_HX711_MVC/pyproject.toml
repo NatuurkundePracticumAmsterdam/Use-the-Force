@@ -1,10 +1,10 @@
 [project]
-name = "loadcell-hx711-mvc"
-version = "0.12.2"
-description = "Software for the Use-The-Force experiment using the Thorlabs setup -- MVC structure"
+name = "use-the-force-mjolnir"
+version = "1.0.0"
+description = "Software for the Use-The-Force experiment using the Thorlabs setup"
 readme = "README.md"
 authors = [
-    { name = "DylanvanArneman", email = "51400178+DylanvanArneman@users.noreply.github.com" }
+    { name = "Dylan van Arneman"}
 ]
 requires-python = ">=3.10"
 dependencies = [
@@ -20,9 +20,9 @@ dependencies = [
 
 [project.scripts]
 loadcell-hx711-mvc = "loadcell_hx711_mvc:main"
-# CLI = "loadcell_hx711_mvc.cli_LoadCell_HX711:cmd_group" # Type CLI + some subcommand into the terminal to execute ./src/loadcell_hx711_MVC/cli_LoadCell_HX711.py (and then the different functions indicate the available subcommands) -> Turns out not to be very useful for the way our experiment works
-CLI-Mjolnir = "loadcell_hx711_mvc.interactive_cli_LoadCell_HX711:main"
-ObsoleteMjolnir = "loadcell_hx711_mvc.gui_LoadCell_HX711:main" # This is to launch the non-threaded gui. It's fine for making plots, but you can't see data appear live
+# CLI = "loadcell_hx711_mvc.cli_LoadCell_HX711:cmd_group" # Type CLI + some subcommand into the terminal to execute ./src/loadcell_hx711_MVC/cli_LoadCell_HX711.py (and then the different functions indicate the available subcommands) -> Turns out not to be very useful for the way our experiment works -- This command is not used for the moment
+# CLI-Mjolnir = "loadcell_hx711_mvc.interactive_cli_LoadCell_HX711:main" # This command is not used for the moment
+# ObsoleteMjolnir = "loadcell_hx711_mvc.gui_LoadCell_HX711:main" # This is to launch the non-threaded gui. It's fine for making plots, but you can't see data appear live # This command is not used for the moment since we have moved to the fully threaded implementation
 Mjolnir = "loadcell_hx711_mvc.Threading_gui_LoadCell_HX711:main" # This version has implemented threading, meaning you can see data appear live
 
 [build-system]
@@ -35,7 +35,7 @@ pyside6-uic src/loadcell_hx711_mvc/DesignerGuiMjolnir.ui --output src/loadcell_h
 """
 interpreter = ["posix", "powershell"]
 
-[tool.poe.tasks.threadcompile] # Useful: just type "poe compile" into the terminal in order to compile your .ui file
+[tool.poe.tasks.threadcompile] # Useful: just type "poe threadcompile" into the terminal in order to compile your .ui file
 shell = """
 pyside6-uic src/loadcell_hx711_mvc/Threading_DesignerGuiMjolnir.ui --output src/loadcell_hx711_mvc/Threading_ui_Mjolnir_designer.py
 """

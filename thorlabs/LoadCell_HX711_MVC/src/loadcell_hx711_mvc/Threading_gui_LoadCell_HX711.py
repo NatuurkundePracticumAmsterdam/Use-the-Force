@@ -14,7 +14,7 @@ try:
 except ImportError:
     from Threading_ui_Mjolnir_designer import Ui_MainWindow
 
-MJOLNIR_VERSION = version("loadcell-hx711-mvc")
+MJOLNIR_VERSION = version("use-the-force-mjolnir")
 
 # Needed for threading:
 import time
