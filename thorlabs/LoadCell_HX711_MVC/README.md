@@ -26,10 +26,10 @@ The Python dependencies are managed through the project configuration. They incl
 
 ### Option 1: Install the published package
 
-If the package has been published to PyPI under the name `Use-The-Force-Mjolnir`, install it with:
+If the package has been published to PyPI under the name `use-the-force-mjolnir`, install it with:
 
 ```bash
-python -m pip install Use-The-Force-Mjolnir
+python -m pip install use-the-force-mjolnir
 ```
 
 The threaded graphical interface can then be launched with:
