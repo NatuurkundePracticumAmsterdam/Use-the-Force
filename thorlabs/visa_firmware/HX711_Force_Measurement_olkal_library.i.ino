@@ -18,7 +18,7 @@ const int STAGE_IO_2 = 5;   // Translation stage I/O signal (second port)
 HX711_ADC LoadCell(HX711_dout, HX711_sck); // Creating an object called LoadCell using these specific Arduino pins
 
 // Identification string:
-const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.5.1";
+const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.5.2";
 
 // A variable to keep track of whether we are measuring or not (needed for implementation of continuous readout):
 bool measuring = false;
@@ -78,7 +78,7 @@ void loop() {
       int IO_port2_reading = digitalRead(STAGE_IO_2); // Read whether the stage is moving (returns a 0 if not moving, a 1 if it is moving)
 
       Serial.print("DATA,"); // Have every line with data start with "DATA," so that you can distinguish this from other things that the Arduino is printing (related to taring or calibration, for example)
-      Serial.print(value);
+      Serial.print(value, 6); // 6 decimal places
       Serial.print(","); // Separate the next value, which is whether the translation stage is returning a "moving" (1) or "not moving" (0) signal
       Serial.print(IO_port1_reading); //
       Serial.print(","); // Separate the next value, which is whether the translation stage is returning a "moving" (1) or "not moving" (0) signal
