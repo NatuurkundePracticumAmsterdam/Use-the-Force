@@ -18,7 +18,7 @@ const int STAGE_IO_2 = 5;   // Translation stage I/O signal (second port)
 HX711_ADC LoadCell(HX711_dout, HX711_sck); // Creating an object called LoadCell using these specific Arduino pins
 
 // Identification string:
-const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.5.2";
+const char IDN_STRING[] = "Arduino HX711 Force Sensor v0.6.0";
 
 // A variable to keep track of whether we are measuring or not (needed for implementation of continuous readout):
 bool measuring = false;
