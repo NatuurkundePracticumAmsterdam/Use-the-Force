@@ -1,6 +1,6 @@
 [project]
 name = "use-the-force-mjolnir"
-version = "1.0.0"
+version = "1.1.0"
 description = "Software for the Use-The-Force experiment using the Thorlabs setup"
 readme = "README.md"
 authors = [

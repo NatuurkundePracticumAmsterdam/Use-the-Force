@@ -1,4 +1,5 @@
 import csv
+import math
 import sys
 from importlib.metadata import version
 
@@ -59,6 +60,21 @@ class UserInterface(QtWidgets.QMainWindow):
         self.ui.plot_widget.setTitle("Force vs. Time")
 
         self.ui.plot_widget.showGrid(x=True, y=True)
+
+        # Update the plot in a smarter way: don't redraw everything each time we get a new measurement
+        # Create a persistent plot curve
+        self.live_curve = self.ui.plot_widget.plot(
+            [],
+            [],
+            pen=None,
+            symbol="o",
+            symbolSize=8,
+            symbolBrush="b",
+        )
+
+        # Keep track of when the plot was last updated
+        self.last_plot_update = 0.0
+        self.last_range_update = 0.0
 
         # Show firmware label at the bottom
         self.ui.FirmwareLabel.setText(
@@ -124,7 +140,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # Extra button just for fun: reset view for in case you get lost after zooming:
         self.ui.ResetViewButton.clicked.connect(self.reset_view)
 
-    # Implemented the following method for threading:
+    # Update plot without redrawing everything
     @Slot(float, bool, bool)
     def receive_live_measurement(self, force, io_port_1_reading, io_port_2_reading):
         """Receive and store a live measurement and update the plot.
@@ -148,7 +164,13 @@ class UserInterface(QtWidgets.QMainWindow):
         self.io_port_1_readings.append(io_port_1_reading)
         self.io_port_2_readings.append(io_port_2_reading)
 
-        self.show_plot()
+        # Gradually increase the plot update interval as the measurement progresses -- We want lots of visible updates in the beginning, at higher times it's less important. After some time it will reduce to a minimum of 10 Hz
+        # Note: this is __only__ for plotting. The data storage is still happening at the hardware rate. Had to change the way we plot so that the GUI doesn't slow down as more data comes in. Every measurement is stored, even when the plot isn't refreshed
+        plot_update_interval = min(0.1, (1 / 60) + 0.02 * math.log1p(current_time))
+
+        if current_time - self.last_plot_update >= plot_update_interval:
+            self.show_plot()
+            self.last_plot_update = current_time
 
     # Implemented for threading:
     @Slot()
@@ -184,6 +206,10 @@ class UserInterface(QtWidgets.QMainWindow):
         self.forces = []
         self.io_port_1_readings = []
         self.io_port_2_readings = []
+        self.live_curve.setData([], [])
+
+        self.last_plot_update = 0.0
+        self.last_range_update = 0.0
 
         self.measurement_start_time = time.perf_counter()
 
@@ -273,7 +299,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.io_port_2_readings = []
 
             self.has_live_measurement = False
-            self.ui.plot_widget.clear()
+            self.live_curve.setData([], [])
 
         # Now to update the list:
         # Empty out the box and remove all possible selections:
@@ -378,31 +404,28 @@ class UserInterface(QtWidgets.QMainWindow):
                 ):
                     writer.writerow([time_s, force_n, io_port_1, io_port_2])
 
+    # Show plot, but updated so that you don't redraw 80 times per second
     @Slot()
     def show_plot(self):
-        """Update the plot with the stored force measurements.
+        """Update the existing plot with the stored force measurements.
 
-        Display force as a function of elapsed time using individual data
-        points, clear the previous plot contents, and automatically adjust
-        the axes to fit the data.
+        Refresh the displayed data and automatically adjust the axes
+        at a maximum requested (hardcoded) frequency of 15 Hz.
 
         Returns:
         None"""
 
-        self.ui.plot_widget.clear()
-
-        # Plot dots:
-        self.ui.plot_widget.plot(
+        self.live_curve.setData(
             self.times,
             self.forces,
-            pen=None,
-            symbol="o",
-            symbolSize=8,
-            symbolBrush="b",
         )
 
-        # Set the axes to the automatically determined range
-        self.ui.plot_widget.autoRange()
+        # Update the axis ranges at a frequency of 15 Hz -- This is different from the logarithmic
+        current_time = time.perf_counter() - self.measurement_start_time
+
+        if current_time - self.last_range_update >= 1.0 / 15.0:
+            self.ui.plot_widget.autoRange()
+            self.last_range_update = current_time
 
     # This activates once you click a port in the "select device" dropdown menu
     @Slot()
@@ -465,6 +488,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.io_port_1_readings = []
             self.io_port_2_readings = []
             self.has_live_measurement = False
+            self.live_curve.setData([], [])
 
             return
 
@@ -508,7 +532,7 @@ class UserInterface(QtWidgets.QMainWindow):
             self.io_port_1_readings = []
             self.io_port_2_readings = []
             self.has_live_measurement = False
-            self.ui.plot_widget.clear()
+            self.live_curve.setData([], [])
 
         # Connect to the newly selected device
         portname = self.ui.DeviceSelectorBox.currentText()
@@ -570,7 +594,7 @@ class UserInterface(QtWidgets.QMainWindow):
         # There is no longer a measurement to overwrite
         self.has_live_measurement = False
 
-        self.ui.plot_widget.clear()
+        self.live_curve.setData([], [])
         self.ui.ResetViewButton.setEnabled(False)
         # Disable the ability to save if you can't see the plot:
         self.ui.SaveButton.setEnabled(False)
