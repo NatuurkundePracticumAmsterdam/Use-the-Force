@@ -24,15 +24,9 @@ The Python dependencies are managed through the project configuration. They incl
 
 ## Installation
 
-### Option 1: Install the published package
+### Option 1: Run the package directly (if it has already been installed)
 
-If the package has been published to PyPI under the name `use-the-force-mjolnir`, install it with:
-
-```bash
-python -m pip install use-the-force-mjolnir
-```
-
-The threaded graphical interface can then be launched with:
+The threaded graphical interface can be launched with:
 
 ```bash
 Mjolnir
@@ -47,12 +41,6 @@ Clone the repository and navigate to the project directory:
 ```bash
 git clone <repository-url>
 cd <repository-directory>
-```
-
-Install [uv](https://docs.astral.sh/uv/) if it is not already available. Then synchronise the project environment:
-
-```bash
-uv sync
 ```
 
 This installs the project and its dependencies into the environment managed by uv.
