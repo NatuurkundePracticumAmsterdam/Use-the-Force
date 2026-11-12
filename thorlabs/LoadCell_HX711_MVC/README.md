@@ -155,15 +155,6 @@ Regenerates the Python interface for the original GUI, used in `ObsoluteOrUnused
 
 These commands require Poe, provided by the `poethepoet` package, to be available in the environment.
 
-### Building the package
-
-To build a source distribution and a wheel:
-
-```bash
-uv build
-```
-
-The resulting distribution files are placed in the `dist/` directory.
 
 ## Dependencies
 
@@ -178,9 +169,6 @@ The main dependencies are:
 - [PySerial](https://pyserial.readthedocs.io/): Serial-port support.
 - [Click](https://click.palletsprojects.com/): Command-line tooling.
 
-## License
-
-Add the project's chosen open-source licence here before publishing the package.
 
 ## Acknowledgements
 
